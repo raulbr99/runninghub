@@ -112,6 +112,7 @@ export const nutritionGoals = pgTable('nutrition_goals', {
 export const appSettings = pgTable('app_settings', {
   id: uuid('id').primaryKey().defaultRandom(),
   selectedModel: text('selected_model').default('openai/gpt-4o').notNull(),
+  selectedModels: jsonb('selected_models').$type<string[]>().default(['openai/gpt-4o']).notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 

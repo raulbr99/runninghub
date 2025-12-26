@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 interface Settings {
   id: string;
   selectedModel: string;
+  selectedModels: string[];
   updatedAt: string;
 }
 
@@ -31,7 +32,7 @@ export default function SettingsPage() {
   const [loadingModels, setLoadingModels] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [selectedModel, setSelectedModel] = useState('openai/gpt-4o');
+  const [selectedModels, setSelectedModels] = useState<string[]>(['openai/gpt-4o']);
   const [filterProvider, setFilterProvider] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFreeOnly, setShowFreeOnly] = useState(false);
@@ -47,7 +48,7 @@ export default function SettingsPage() {
       if (res.ok) {
         const data = await res.json();
         setSettings(data);
-        setSelectedModel(data.selectedModel || 'openai/gpt-4o');
+        setSelectedModels(data.selectedModels || ['openai/gpt-4o']);
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -61,11 +62,9 @@ export default function SettingsPage() {
       const res = await fetch('/api/models');
       const data = await res.json();
       if (data.data) {
-        // Filter to only include text models (chat capable)
         const chatModels = data.data.filter((m: OpenRouterModel) => {
           const modality = m.architecture?.modality || '';
           const inputModalities = m.architecture?.input_modalities || [];
-          // Include models that support text input
           return modality.includes('text') || inputModalities.includes('text');
         });
         setAllModels(chatModels);
@@ -77,6 +76,16 @@ export default function SettingsPage() {
     }
   };
 
+  const toggleModel = (modelId: string) => {
+    setSelectedModels(prev => {
+      if (prev.includes(modelId)) {
+        if (prev.length === 1) return prev; // Keep at least one
+        return prev.filter(id => id !== modelId);
+      }
+      return [...prev, modelId];
+    });
+  };
+
   const saveSettings = async () => {
     setSaving(true);
     setMessage(null);
@@ -85,13 +94,16 @@ export default function SettingsPage() {
       const res = await fetch('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ selectedModel }),
+        body: JSON.stringify({
+          selectedModels,
+          selectedModel: selectedModels[0],
+        }),
       });
 
       if (res.ok) {
         const data = await res.json();
         setSettings(data);
-        setMessage({ type: 'success', text: 'Configuracion guardada' });
+        setMessage({ type: 'success', text: `${selectedModels.length} modelo(s) guardado(s)` });
       } else {
         setMessage({ type: 'error', text: 'Error al guardar' });
       }
@@ -104,7 +116,6 @@ export default function SettingsPage() {
     }
   };
 
-  // Get unique providers from models
   const providers = useMemo(() => {
     const providerSet = new Set<string>();
     allModels.forEach(m => {
@@ -114,7 +125,6 @@ export default function SettingsPage() {
     return Array.from(providerSet).sort();
   }, [allModels]);
 
-  // Filter models
   const filteredModels = useMemo(() => {
     return allModels.filter(m => {
       const provider = m.id.split('/')[0];
@@ -131,7 +141,6 @@ export default function SettingsPage() {
   const formatPrice = (price: string) => {
     const num = parseFloat(price);
     if (num === 0) return 'Gratis';
-    if (num < 0.0001) return `$${(num * 1000000).toFixed(2)}/1M`;
     return `$${(num * 1000000).toFixed(2)}/1M`;
   };
 
@@ -165,13 +174,42 @@ export default function SettingsPage() {
         </div>
       )}
 
+      {/* Modelos seleccionados */}
+      {selectedModels.length > 0 && (
+        <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+          <p className="text-sm font-medium text-green-800 dark:text-green-200 mb-2">
+            {selectedModels.length} modelo(s) seleccionado(s) para el chat:
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {selectedModels.map(modelId => {
+              const model = allModels.find(m => m.id === modelId);
+              return (
+                <span
+                  key={modelId}
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200 rounded-lg text-sm"
+                >
+                  {model?.name || modelId.split('/').pop()}
+                  <button
+                    onClick={() => toggleModel(modelId)}
+                    className="ml-1 hover:text-red-500"
+                    disabled={selectedModels.length === 1}
+                  >
+                    &#10005;
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <span>&#129302;</span> Modelo de IA para el Coach
+            <span>&#129302;</span> Modelos de IA para el Coach
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {loadingModels ? 'Cargando modelos...' : `${allModels.length} modelos disponibles en OpenRouter`}
+            {loadingModels ? 'Cargando modelos...' : `Selecciona los modelos que quieres usar (${allModels.length} disponibles)`}
           </p>
         </div>
 
@@ -244,22 +282,22 @@ export default function SettingsPage() {
                 {filteredModels.map((model) => {
                   const provider = model.id.split('/')[0];
                   const isFree = parseFloat(model.pricing.prompt) === 0;
+                  const isSelected = selectedModels.includes(model.id);
                   return (
-                    <label
+                    <div
                       key={model.id}
+                      onClick={() => toggleModel(model.id)}
                       className={`flex items-start gap-4 p-4 rounded-xl cursor-pointer transition-all ${
-                        selectedModel === model.id
+                        isSelected
                           ? 'bg-green-100 dark:bg-green-900/30 border-2 border-green-500'
                           : 'bg-gray-50 dark:bg-gray-700/50 border-2 border-transparent hover:bg-gray-100 dark:hover:bg-gray-700'
                       }`}
                     >
                       <input
-                        type="radio"
-                        name="model"
-                        value={model.id}
-                        checked={selectedModel === model.id}
-                        onChange={(e) => setSelectedModel(e.target.value)}
-                        className="w-4 h-4 mt-1 text-green-600 focus:ring-green-500"
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleModel(model.id)}
+                        className="w-5 h-5 mt-1 text-green-600 rounded focus:ring-green-500"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -283,30 +321,23 @@ export default function SettingsPage() {
                           <span title="Precio output">&#8595; {formatPrice(model.pricing.completion)}</span>
                         </div>
                       </div>
-                      {selectedModel === model.id && (
+                      {isSelected && (
                         <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       )}
-                    </label>
+                    </div>
                   );
                 })}
               </div>
             </>
           )}
-
-          {/* Modelo seleccionado */}
-          <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Modelo seleccionado: <span className="font-mono font-medium text-gray-900 dark:text-white">{selectedModel}</span>
-            </p>
-          </div>
         </div>
 
         <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
           <button
             onClick={saveSettings}
-            disabled={saving}
+            disabled={saving || selectedModels.length === 0}
             className="px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-xl font-medium flex items-center gap-2 transition-colors"
           >
             {saving ? (
@@ -319,7 +350,7 @@ export default function SettingsPage() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                Guardar
+                Guardar ({selectedModels.length})
               </>
             )}
           </button>
@@ -331,10 +362,10 @@ export default function SettingsPage() {
         <div className="flex gap-3">
           <span className="text-xl">&#128161;</span>
           <div>
-            <p className="font-medium text-blue-900 dark:text-blue-200">Sobre los modelos</p>
+            <p className="font-medium text-blue-900 dark:text-blue-200">Seleccion multiple</p>
             <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-              Los precios se muestran por millon de tokens. Los modelos gratuitos pueden tener limites de uso.
-              El contexto indica la cantidad maxima de texto que el modelo puede procesar.
+              Puedes seleccionar varios modelos y cambiar entre ellos en el chat usando el dropdown.
+              Los modelos gratuitos tienen limites de uso.
             </p>
           </div>
         </div>
