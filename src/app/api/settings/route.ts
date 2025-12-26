@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { appSettings } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 export async function GET() {
   try {
@@ -41,6 +42,7 @@ export async function PUT(request: NextRequest) {
         selectedModel: body.selectedModel || existing[0].selectedModel,
         updatedAt: new Date(),
       })
+      .where(eq(appSettings.id, existing[0].id))
       .returning();
 
     return NextResponse.json(updated);
