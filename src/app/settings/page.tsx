@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 interface Settings {
   id: string;
@@ -8,44 +8,37 @@ interface Settings {
   updatedAt: string;
 }
 
-const AVAILABLE_MODELS = [
-  // OpenAI
-  { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI', description: 'Modelo mas avanzado de OpenAI' },
-  { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI', description: 'Version ligera y rapida de GPT-4o' },
-  { id: 'openai/gpt-4-turbo', name: 'GPT-4 Turbo', provider: 'OpenAI', description: 'GPT-4 optimizado para velocidad' },
-  { id: 'openai/o1', name: 'o1', provider: 'OpenAI', description: 'Modelo de razonamiento avanzado' },
-  { id: 'openai/o1-mini', name: 'o1 Mini', provider: 'OpenAI', description: 'Version ligera del modelo o1' },
-  // Anthropic
-  { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', description: 'Equilibrio entre capacidad y velocidad' },
-  { id: 'anthropic/claude-3-opus', name: 'Claude 3 Opus', provider: 'Anthropic', description: 'Modelo mas capaz de Anthropic' },
-  { id: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku', provider: 'Anthropic', description: 'Rapido y eficiente' },
-  // Google
-  { id: 'google/gemini-2.0-flash-exp:free', name: 'Gemini 2.0 Flash', provider: 'Google', description: 'Ultimo modelo de Google, gratis' },
-  { id: 'google/gemini-pro-1.5', name: 'Gemini Pro 1.5', provider: 'Google', description: 'Modelo Pro de Google' },
-  // Meta
-  { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 70B', provider: 'Meta', description: 'Ultimo Llama de Meta' },
-  { id: 'meta-llama/llama-3.1-405b-instruct', name: 'Llama 3.1 405B', provider: 'Meta', description: 'Modelo gigante de Meta' },
-  // Mistral
-  { id: 'mistralai/mistral-large', name: 'Mistral Large', provider: 'Mistral', description: 'Modelo grande de Mistral' },
-  { id: 'mistralai/mixtral-8x22b-instruct', name: 'Mixtral 8x22B', provider: 'Mistral', description: 'Modelo MoE de Mistral' },
-  // DeepSeek
-  { id: 'deepseek/deepseek-chat', name: 'DeepSeek Chat', provider: 'DeepSeek', description: 'Modelo conversacional de DeepSeek' },
-  // Qwen
-  { id: 'qwen/qwen-2.5-72b-instruct', name: 'Qwen 2.5 72B', provider: 'Qwen', description: 'Ultimo modelo de Alibaba' },
-];
-
-const PROVIDERS = ['OpenAI', 'Anthropic', 'Google', 'Meta', 'Mistral', 'DeepSeek', 'Qwen'];
+interface OpenRouterModel {
+  id: string;
+  name: string;
+  description?: string;
+  pricing: {
+    prompt: string;
+    completion: string;
+  };
+  context_length: number;
+  architecture?: {
+    modality: string;
+    input_modalities?: string[];
+    output_modalities?: string[];
+  };
+}
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [allModels, setAllModels] = useState<OpenRouterModel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingModels, setLoadingModels] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [selectedModel, setSelectedModel] = useState('openai/gpt-4o');
   const [filterProvider, setFilterProvider] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFreeOnly, setShowFreeOnly] = useState(false);
 
   useEffect(() => {
     loadSettings();
+    loadModels();
   }, []);
 
   const loadSettings = async () => {
@@ -60,6 +53,27 @@ export default function SettingsPage() {
       console.error('Error loading settings:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadModels = async () => {
+    try {
+      const res = await fetch('/api/models');
+      const data = await res.json();
+      if (data.data) {
+        // Filter to only include text models (chat capable)
+        const chatModels = data.data.filter((m: OpenRouterModel) => {
+          const modality = m.architecture?.modality || '';
+          const inputModalities = m.architecture?.input_modalities || [];
+          // Include models that support text input
+          return modality.includes('text') || inputModalities.includes('text');
+        });
+        setAllModels(chatModels);
+      }
+    } catch (error) {
+      console.error('Error loading models:', error);
+    } finally {
+      setLoadingModels(false);
     }
   };
 
@@ -90,9 +104,42 @@ export default function SettingsPage() {
     }
   };
 
-  const filteredModels = filterProvider
-    ? AVAILABLE_MODELS.filter(m => m.provider === filterProvider)
-    : AVAILABLE_MODELS;
+  // Get unique providers from models
+  const providers = useMemo(() => {
+    const providerSet = new Set<string>();
+    allModels.forEach(m => {
+      const provider = m.id.split('/')[0];
+      providerSet.add(provider);
+    });
+    return Array.from(providerSet).sort();
+  }, [allModels]);
+
+  // Filter models
+  const filteredModels = useMemo(() => {
+    return allModels.filter(m => {
+      const provider = m.id.split('/')[0];
+      const matchesProvider = !filterProvider || provider === filterProvider;
+      const matchesSearch = !searchQuery ||
+        m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        m.id.toLowerCase().includes(searchQuery.toLowerCase());
+      const isFree = parseFloat(m.pricing.prompt) === 0;
+      const matchesFree = !showFreeOnly || isFree;
+      return matchesProvider && matchesSearch && matchesFree;
+    });
+  }, [allModels, filterProvider, searchQuery, showFreeOnly]);
+
+  const formatPrice = (price: string) => {
+    const num = parseFloat(price);
+    if (num === 0) return 'Gratis';
+    if (num < 0.0001) return `$${(num * 1000000).toFixed(2)}/1M`;
+    return `$${(num * 1000000).toFixed(2)}/1M`;
+  };
+
+  const formatContextLength = (length: number) => {
+    if (length >= 1000000) return `${(length / 1000000).toFixed(1)}M`;
+    if (length >= 1000) return `${Math.round(length / 1000)}K`;
+    return length.toString();
+  };
 
   if (loading) {
     return (
@@ -124,77 +171,129 @@ export default function SettingsPage() {
             <span>&#129302;</span> Modelo de IA para el Coach
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Selecciona el modelo de lenguaje que usara tu coach
+            {loadingModels ? 'Cargando modelos...' : `${allModels.length} modelos disponibles en OpenRouter`}
           </p>
         </div>
 
         <div className="p-4">
-          {/* Filtro por proveedor */}
+          {/* Buscador */}
           <div className="mb-4">
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtrar por proveedor:</p>
-            <div className="flex flex-wrap gap-2">
+            <div className="relative">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar modelo..."
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
+          </div>
+
+          {/* Filtros */}
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setShowFreeOnly(!showFreeOnly)}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                showFreeOnly
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              Solo gratis
+            </button>
+            <span className="text-gray-300 dark:text-gray-600">|</span>
+            <button
+              onClick={() => setFilterProvider(null)}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                filterProvider === null
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              Todos
+            </button>
+            {providers.slice(0, 10).map((provider) => (
               <button
-                onClick={() => setFilterProvider(null)}
+                key={provider}
+                onClick={() => setFilterProvider(provider)}
                 className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                  filterProvider === null
+                  filterProvider === provider
                     ? 'bg-green-600 text-white'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
-                Todos
+                {provider}
               </button>
-              {PROVIDERS.map((provider) => (
-                <button
-                  key={provider}
-                  onClick={() => setFilterProvider(provider)}
-                  className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                    filterProvider === provider
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  {provider}
-                </button>
-              ))}
-            </div>
+            ))}
           </div>
 
           {/* Lista de modelos */}
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {filteredModels.map((model) => (
-              <label
-                key={model.id}
-                className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all ${
-                  selectedModel === model.id
-                    ? 'bg-green-100 dark:bg-green-900/30 border-2 border-green-500'
-                    : 'bg-gray-50 dark:bg-gray-700/50 border-2 border-transparent hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="model"
-                  value={model.id}
-                  checked={selectedModel === model.id}
-                  onChange={(e) => setSelectedModel(e.target.value)}
-                  className="w-4 h-4 text-green-600 focus:ring-green-500"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-gray-900 dark:text-white">{model.name}</p>
-                    <span className="px-2 py-0.5 text-xs rounded-full bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300">
-                      {model.provider}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{model.description}</p>
-                </div>
-                {selectedModel === model.id && (
-                  <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                )}
-              </label>
-            ))}
-          </div>
+          {loadingModels ? (
+            <div className="flex justify-center py-12">
+              <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                Mostrando {filteredModels.length} modelos
+              </p>
+              <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                {filteredModels.map((model) => {
+                  const provider = model.id.split('/')[0];
+                  const isFree = parseFloat(model.pricing.prompt) === 0;
+                  return (
+                    <label
+                      key={model.id}
+                      className={`flex items-start gap-4 p-4 rounded-xl cursor-pointer transition-all ${
+                        selectedModel === model.id
+                          ? 'bg-green-100 dark:bg-green-900/30 border-2 border-green-500'
+                          : 'bg-gray-50 dark:bg-gray-700/50 border-2 border-transparent hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="model"
+                        value={model.id}
+                        checked={selectedModel === model.id}
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                        className="w-4 h-4 mt-1 text-green-600 focus:ring-green-500"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium text-gray-900 dark:text-white">{model.name}</p>
+                          <span className="px-2 py-0.5 text-xs rounded-full bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300">
+                            {provider}
+                          </span>
+                          {isFree && (
+                            <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300">
+                              Gratis
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-400 mt-0.5 font-mono truncate">{model.id}</p>
+                        {model.description && (
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{model.description}</p>
+                        )}
+                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                          <span title="Contexto">&#128196; {formatContextLength(model.context_length)}</span>
+                          <span title="Precio input">&#8593; {formatPrice(model.pricing.prompt)}</span>
+                          <span title="Precio output">&#8595; {formatPrice(model.pricing.completion)}</span>
+                        </div>
+                      </div>
+                      {selectedModel === model.id && (
+                        <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
+            </>
+          )}
 
           {/* Modelo seleccionado */}
           <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
@@ -234,8 +333,8 @@ export default function SettingsPage() {
           <div>
             <p className="font-medium text-blue-900 dark:text-blue-200">Sobre los modelos</p>
             <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-              Cada modelo tiene diferentes capacidades y costos. Los modelos mas grandes suelen ser mas precisos pero mas lentos y caros.
-              Puedes cambiar el modelo en cualquier momento.
+              Los precios se muestran por millon de tokens. Los modelos gratuitos pueden tener limites de uso.
+              El contexto indica la cantidad maxima de texto que el modelo puede procesar.
             </p>
           </div>
         </div>
