@@ -108,6 +108,13 @@ export const nutritionGoals = pgTable('nutrition_goals', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// Configuracion de la app
+export const appSettings = pgTable('app_settings', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  selectedModel: text('selected_model').default('openai/gpt-4o').notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Types para TypeScript
 export type Conversation = typeof conversations.$inferSelect;
 export type NewConversation = typeof conversations.$inferInsert;
@@ -123,3 +130,5 @@ export type NutritionEntry = typeof nutritionEntries.$inferSelect;
 export type NewNutritionEntry = typeof nutritionEntries.$inferInsert;
 export type NutritionGoals = typeof nutritionGoals.$inferSelect;
 export type NewNutritionGoals = typeof nutritionGoals.$inferInsert;
+export type AppSettings = typeof appSettings.$inferSelect;
+export type NewAppSettings = typeof appSettings.$inferInsert;
