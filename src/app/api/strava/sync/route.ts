@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { stravaTokens, runningEvents } from '@/lib/db/schema';
 import { getActivities, refreshAccessToken, mapStravaActivityType, formatPace } from '@/lib/strava';
-import { eq } from 'drizzle-orm';
+import { eq, or } from 'drizzle-orm';
 
 export async function POST() {
   try {
@@ -43,12 +43,16 @@ export async function POST() {
     let skipped = 0;
 
     for (const activity of activities) {
-      // Verificar si ya existe un evento con el mismo strava_id
+      // Verificar si ya existe (buscar en stravaId y en notes por compatibilidad)
       const stravaId = activity.id.toString();
+      const legacyStravaNote = `strava:${activity.id}`;
       const existingEvents = await db
         .select()
         .from(runningEvents)
-        .where(eq(runningEvents.stravaId, stravaId))
+        .where(or(
+          eq(runningEvents.stravaId, stravaId),
+          eq(runningEvents.notes, legacyStravaNote)
+        ))
         .limit(1);
 
       if (existingEvents.length > 0) {
