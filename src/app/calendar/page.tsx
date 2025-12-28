@@ -420,11 +420,14 @@ export default function CalendarPage() {
                   </>
                 )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas</label>
-                  <textarea value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" rows={2} />
-                </div>
+                {/* Solo mostrar notas si no es el formato strava:xxx */}
+                {!(formData.notes?.startsWith('strava:')) && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas</label>
+                    <textarea value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" rows={2} />
+                  </div>
+                )}
 
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input type="checkbox" checked={formData.completed === 1} onChange={(e) => setFormData({ ...formData, completed: e.target.checked ? 1 : 0 })}
@@ -432,78 +435,84 @@ export default function CalendarPage() {
                   <span className="text-sm text-gray-700 dark:text-gray-300">Completado</span>
                 </label>
 
-                {/* Datos de Strava */}
-                {selectedEvent?.stravaId && (
-                  <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-4 border border-orange-200 dark:border-orange-800">
-                    <div className="flex items-center gap-2 mb-3">
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#FC4C02">
-                        <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/>
-                      </svg>
-                      <span className="text-sm font-medium text-orange-800 dark:text-orange-200">Datos de Strava</span>
+                {/* Datos de Strava - detectar por stravaId o por notes con formato strava:xxx */}
+                {(() => {
+                  const stravaId = selectedEvent?.stravaId || (selectedEvent?.notes?.startsWith('strava:') ? selectedEvent.notes.replace('strava:', '') : null);
+                  if (!stravaId) return null;
+                  return (
+                    <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-4 border border-orange-200 dark:border-orange-800">
+                      <div className="flex items-center gap-2 mb-3">
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#FC4C02">
+                          <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/>
+                        </svg>
+                        <span className="text-sm font-medium text-orange-800 dark:text-orange-200">Sincronizado de Strava</span>
+                      </div>
+                      {(selectedEvent?.elevationGain || selectedEvent?.calories || selectedEvent?.maxHeartRate || selectedEvent?.averageCadence || selectedEvent?.maxSpeed || selectedEvent?.averageWatts || selectedEvent?.sufferScore) && (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm mb-3">
+                          {selectedEvent.elevationGain && (
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-2">
+                              <p className="text-gray-500 dark:text-gray-400 text-xs">Desnivel</p>
+                              <p className="font-semibold text-gray-900 dark:text-white">{Math.round(selectedEvent.elevationGain)} m</p>
+                            </div>
+                          )}
+                          {selectedEvent.calories && (
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-2">
+                              <p className="text-gray-500 dark:text-gray-400 text-xs">Calorias</p>
+                              <p className="font-semibold text-gray-900 dark:text-white">{selectedEvent.calories} kcal</p>
+                            </div>
+                          )}
+                          {selectedEvent.maxHeartRate && (
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-2">
+                              <p className="text-gray-500 dark:text-gray-400 text-xs">FC Max</p>
+                              <p className="font-semibold text-gray-900 dark:text-white">{selectedEvent.maxHeartRate} bpm</p>
+                            </div>
+                          )}
+                          {selectedEvent.averageCadence && (
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-2">
+                              <p className="text-gray-500 dark:text-gray-400 text-xs">Cadencia</p>
+                              <p className="font-semibold text-gray-900 dark:text-white">{Math.round(selectedEvent.averageCadence * 2)} ppm</p>
+                            </div>
+                          )}
+                          {selectedEvent.maxSpeed && (
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-2">
+                              <p className="text-gray-500 dark:text-gray-400 text-xs">Vel. Max</p>
+                              <p className="font-semibold text-gray-900 dark:text-white">{(selectedEvent.maxSpeed * 3.6).toFixed(1)} km/h</p>
+                            </div>
+                          )}
+                          {selectedEvent.averageWatts && (
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-2">
+                              <p className="text-gray-500 dark:text-gray-400 text-xs">Potencia</p>
+                              <p className="font-semibold text-gray-900 dark:text-white">{Math.round(selectedEvent.averageWatts)} W</p>
+                            </div>
+                          )}
+                          {selectedEvent.sufferScore && (
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-2">
+                              <p className="text-gray-500 dark:text-gray-400 text-xs">Esfuerzo</p>
+                              <p className="font-semibold text-gray-900 dark:text-white">{selectedEvent.sufferScore}</p>
+                            </div>
+                          )}
+                          {selectedEvent.elapsedTime && selectedEvent.movingTime && (
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-2">
+                              <p className="text-gray-500 dark:text-gray-400 text-xs">T. Parado</p>
+                              <p className="font-semibold text-gray-900 dark:text-white">{Math.round((selectedEvent.elapsedTime - selectedEvent.movingTime) / 60)} min</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <a
+                        href={`https://www.strava.com/activities/${stravaId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-sm text-orange-600 dark:text-orange-400 hover:underline"
+                      >
+                        Ver en Strava
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
-                      {selectedEvent.elevationGain && (
-                        <div className="bg-white dark:bg-gray-800 rounded-lg p-2">
-                          <p className="text-gray-500 dark:text-gray-400 text-xs">Desnivel</p>
-                          <p className="font-semibold text-gray-900 dark:text-white">{Math.round(selectedEvent.elevationGain)} m</p>
-                        </div>
-                      )}
-                      {selectedEvent.calories && (
-                        <div className="bg-white dark:bg-gray-800 rounded-lg p-2">
-                          <p className="text-gray-500 dark:text-gray-400 text-xs">Calorias</p>
-                          <p className="font-semibold text-gray-900 dark:text-white">{selectedEvent.calories} kcal</p>
-                        </div>
-                      )}
-                      {selectedEvent.maxHeartRate && (
-                        <div className="bg-white dark:bg-gray-800 rounded-lg p-2">
-                          <p className="text-gray-500 dark:text-gray-400 text-xs">FC Max</p>
-                          <p className="font-semibold text-gray-900 dark:text-white">{selectedEvent.maxHeartRate} bpm</p>
-                        </div>
-                      )}
-                      {selectedEvent.averageCadence && (
-                        <div className="bg-white dark:bg-gray-800 rounded-lg p-2">
-                          <p className="text-gray-500 dark:text-gray-400 text-xs">Cadencia</p>
-                          <p className="font-semibold text-gray-900 dark:text-white">{Math.round(selectedEvent.averageCadence * 2)} ppm</p>
-                        </div>
-                      )}
-                      {selectedEvent.maxSpeed && (
-                        <div className="bg-white dark:bg-gray-800 rounded-lg p-2">
-                          <p className="text-gray-500 dark:text-gray-400 text-xs">Vel. Max</p>
-                          <p className="font-semibold text-gray-900 dark:text-white">{(selectedEvent.maxSpeed * 3.6).toFixed(1)} km/h</p>
-                        </div>
-                      )}
-                      {selectedEvent.averageWatts && (
-                        <div className="bg-white dark:bg-gray-800 rounded-lg p-2">
-                          <p className="text-gray-500 dark:text-gray-400 text-xs">Potencia</p>
-                          <p className="font-semibold text-gray-900 dark:text-white">{Math.round(selectedEvent.averageWatts)} W</p>
-                        </div>
-                      )}
-                      {selectedEvent.sufferScore && (
-                        <div className="bg-white dark:bg-gray-800 rounded-lg p-2">
-                          <p className="text-gray-500 dark:text-gray-400 text-xs">Esfuerzo</p>
-                          <p className="font-semibold text-gray-900 dark:text-white">{selectedEvent.sufferScore}</p>
-                        </div>
-                      )}
-                      {selectedEvent.elapsedTime && selectedEvent.movingTime && (
-                        <div className="bg-white dark:bg-gray-800 rounded-lg p-2">
-                          <p className="text-gray-500 dark:text-gray-400 text-xs">T. Parado</p>
-                          <p className="font-semibold text-gray-900 dark:text-white">{Math.round((selectedEvent.elapsedTime - selectedEvent.movingTime) / 60)} min</p>
-                        </div>
-                      )}
-                    </div>
-                    <a
-                      href={`https://www.strava.com/activities/${selectedEvent.stravaId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 inline-flex items-center gap-1 text-sm text-orange-600 dark:text-orange-400 hover:underline"
-                    >
-                      Ver en Strava
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                    </a>
-                  </div>
-                )}
+                  );
+                })()}
 
                 <div className="flex gap-3 pt-2">
                   {selectedEvent && (
