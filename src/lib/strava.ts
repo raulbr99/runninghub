@@ -140,27 +140,53 @@ export async function deauthorize(accessToken: string): Promise<void> {
 
 // Mapea tipo de actividad de Strava a tipo de evento en RunningHub
 export function mapStravaActivityType(activity: StravaActivity): string {
-  // Solo importamos actividades de running
-  if (activity.type !== 'Run' && activity.sport_type !== 'Run') {
-    return 'other';
-  }
-
+  const type = activity.type || activity.sport_type;
   const distanceKm = activity.distance / 1000;
-  const paceMinPerKm = activity.moving_time / 60 / distanceKm;
 
-  // workout_type: 0 = default, 1 = race, 2 = long run, 3 = workout (intervals/tempo)
-  if (activity.workout_type === 1) return 'race';
-  if (activity.workout_type === 2) return 'long';
-  if (activity.workout_type === 3) {
-    // Determinar si es tempo o intervals basado en ritmo
-    return paceMinPerKm < 5 ? 'intervals' : 'tempo';
+  // Ciclismo
+  if (type === 'Ride' || type === 'VirtualRide' || type === 'EBikeRide' || type === 'MountainBikeRide' || type === 'GravelRide') {
+    return 'cycling';
   }
 
-  // Clasificar por distancia si no hay workout_type
-  if (distanceKm >= 18) return 'long';
-  if (distanceKm <= 6 && paceMinPerKm > 6) return 'recovery';
+  // Caminata / Senderismo
+  if (type === 'Walk' || type === 'Hike') {
+    return 'walk';
+  }
 
-  return 'easy';
+  // Natación
+  if (type === 'Swim') {
+    return 'swim';
+  }
+
+  // Fuerza / Gym
+  if (type === 'WeightTraining' || type === 'Workout' || type === 'Crossfit') {
+    return 'strength';
+  }
+
+  // Yoga / Stretching
+  if (type === 'Yoga' || type === 'Stretching') {
+    return 'recovery';
+  }
+
+  // Running
+  if (type === 'Run' || type === 'VirtualRun' || type === 'TrailRun') {
+    const paceMinPerKm = activity.moving_time / 60 / distanceKm;
+
+    // workout_type: 0 = default, 1 = race, 2 = long run, 3 = workout (intervals/tempo)
+    if (activity.workout_type === 1) return 'race';
+    if (activity.workout_type === 2) return 'long';
+    if (activity.workout_type === 3) {
+      return paceMinPerKm < 5 ? 'intervals' : 'tempo';
+    }
+
+    if (distanceKm >= 18) return 'long';
+    if (distanceKm <= 6 && paceMinPerKm > 6) return 'recovery';
+
+    return 'easy';
+  }
+
+  // Otros deportes
+  return 'other';
 }
 
 // Convierte m/s a min/km string

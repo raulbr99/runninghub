@@ -90,11 +90,6 @@ export async function POST(request: NextRequest) {
 
     const activity = await activityRes.json();
 
-    // Solo importar actividades de running
-    if (activity.type !== 'Run' && activity.sport_type !== 'Run') {
-      return NextResponse.json({ received: true });
-    }
-
     // Verificar si ya existe
     const stravaIdNote = `strava:${activity.id}`;
     const existing = await db

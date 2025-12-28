@@ -87,8 +87,13 @@ export default function DashboardPage() {
       rest: { label: 'Descanso', icon: '😴' },
       race: { label: 'Carrera', icon: '🏆' },
       strength: { label: 'Fuerza', icon: '💪' },
+      recovery: { label: 'Recuperacion', icon: '🧘' },
+      cycling: { label: 'Ciclismo', icon: '🚴' },
+      walk: { label: 'Caminata', icon: '🚶' },
+      swim: { label: 'Natacion', icon: '🏊' },
+      other: { label: 'Otro', icon: '🏅' },
     };
-    return types[type] || { label: type, icon: '🏃' };
+    return types[type] || { label: type, icon: '🏅' };
   };
 
   if (loading) {

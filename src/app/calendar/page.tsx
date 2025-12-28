@@ -13,6 +13,11 @@ const RUNNING_TYPES = [
   { id: 'rest', label: 'Descanso', color: 'bg-gray-400', icon: '😴' },
   { id: 'race', label: 'Carrera', color: 'bg-purple-500', icon: '🏆' },
   { id: 'strength', label: 'Fuerza', color: 'bg-yellow-500', icon: '💪' },
+  { id: 'recovery', label: 'Recuperacion', color: 'bg-teal-500', icon: '🧘' },
+  { id: 'cycling', label: 'Ciclismo', color: 'bg-sky-500', icon: '🚴' },
+  { id: 'walk', label: 'Caminata', color: 'bg-lime-500', icon: '🚶' },
+  { id: 'swim', label: 'Natacion', color: 'bg-cyan-500', icon: '🏊' },
+  { id: 'other', label: 'Otro', color: 'bg-slate-500', icon: '🏅' },
 ];
 
 const PERSONAL_TYPES = [

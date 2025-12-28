@@ -39,15 +39,10 @@ export async function POST() {
     const thirtyDaysAgo = Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60;
     const activities = await getActivities(token.accessToken, 1, 50, thirtyDaysAgo);
 
-    // Filtrar solo actividades de running
-    const runningActivities = activities.filter(
-      (a) => a.type === 'Run' || a.sport_type === 'Run'
-    );
-
     let imported = 0;
     let skipped = 0;
 
-    for (const activity of runningActivities) {
+    for (const activity of activities) {
       // Verificar si ya existe un evento con el mismo strava_id en las notas
       const stravaId = `strava:${activity.id}`;
       const existingEvents = await db
@@ -88,7 +83,7 @@ export async function POST() {
       success: true,
       imported,
       skipped,
-      total: runningActivities.length,
+      total: activities.length,
     });
   } catch (error) {
     console.error('Error syncing Strava activities:', error);
