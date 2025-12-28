@@ -12,7 +12,19 @@ interface ActivityMapProps {
   endLat?: number;
   endLng?: number;
   highlightedKm?: number | null;
-  totalDistance?: number; // Distancia total en km de la actividad
+  totalDistance?: number; // Distancia total en km de la actividad (de Strava)
+}
+
+// Calcular distancia entre dos puntos usando formula de Haversine
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000; // Radio de la Tierra en metros
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
 export default function ActivityMap({
@@ -28,6 +40,8 @@ export default function ActivityMap({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const highlightLayerRef = useRef<L.Polyline | null>(null);
   const coordinatesRef = useRef<[number, number][]>([]);
+  const distancesRef = useRef<number[]>([]);
+  const offsetRef = useRef<number>(0);
 
   // Inicializar mapa
   useEffect(() => {
@@ -38,6 +52,29 @@ export default function ActivityMap({
     coordinatesRef.current = coordinates;
 
     if (coordinates.length === 0) return;
+
+    // Calcular distancias acumuladas del polyline
+    const distances: number[] = [0];
+    for (let i = 1; i < coordinates.length; i++) {
+      const d = haversineDistance(
+        coordinates[i - 1][0], coordinates[i - 1][1],
+        coordinates[i][0], coordinates[i][1]
+      );
+      distances.push(distances[i - 1] + d);
+    }
+    distancesRef.current = distances;
+
+    // Calcular offset: diferencia entre distancia del polyline y distancia de Strava
+    // Strava recorta el inicio y fin, asumimos que el recorte es principalmente al inicio
+    const polylineDistance = distances[distances.length - 1];
+    const stravaDistance = (totalDistance || 0) * 1000;
+
+    if (stravaDistance > 0 && polylineDistance > stravaDistance) {
+      // Hay diferencia, calcular offset (asumimos que Strava empieza despues)
+      offsetRef.current = (polylineDistance - stravaDistance) / 2;
+    } else {
+      offsetRef.current = 0;
+    }
 
     // Crear mapa
     const map = L.map(mapRef.current, {
@@ -87,7 +124,7 @@ export default function ActivityMap({
       map.remove();
       mapInstanceRef.current = null;
     };
-  }, [encodedPolyline, startLat, startLng, endLat, endLng]);
+  }, [encodedPolyline, startLat, startLng, endLat, endLng, totalDistance]);
 
   // Actualizar highlight cuando cambia el km
   useEffect(() => {
@@ -101,24 +138,35 @@ export default function ActivityMap({
     }
 
     if (highlightedKm === null || highlightedKm === undefined) return;
-    if (!totalDistance || totalDistance <= 0) return;
 
     const coordinates = coordinatesRef.current;
-    if (coordinates.length === 0) return;
+    const distances = distancesRef.current;
+    const offset = offsetRef.current;
 
-    const totalPoints = coordinates.length;
-    const totalDistanceMeters = totalDistance * 1000;
+    if (coordinates.length === 0 || distances.length === 0) return;
 
     // km 1 = 0-1000m, km 2 = 1000-2000m, etc.
-    const startDist = (highlightedKm - 1) * 1000;
-    const endDist = Math.min(highlightedKm * 1000, totalDistanceMeters);
+    // Añadir offset para compensar el recorte de Strava
+    const startDist = offset + (highlightedKm - 1) * 1000;
+    const endDist = offset + highlightedKm * 1000;
 
-    // Calcular indices basados en proporcion de la distancia total
-    const startIdx = Math.floor((startDist / totalDistanceMeters) * totalPoints);
-    const endIdx = Math.min(
-      Math.ceil((endDist / totalDistanceMeters) * totalPoints),
-      totalPoints - 1
-    );
+    // Encontrar indices
+    let startIdx = 0;
+    let endIdx = coordinates.length - 1;
+
+    for (let i = 0; i < distances.length; i++) {
+      if (distances[i] >= startDist) {
+        startIdx = Math.max(0, i - 1);
+        break;
+      }
+    }
+
+    for (let i = startIdx; i < distances.length; i++) {
+      if (distances[i] >= endDist) {
+        endIdx = Math.min(i, coordinates.length - 1);
+        break;
+      }
+    }
 
     // Extraer los puntos del segmento
     if (endIdx > startIdx) {
@@ -132,7 +180,7 @@ export default function ActivityMap({
         }).addTo(map);
       }
     }
-  }, [highlightedKm, totalDistance]);
+  }, [highlightedKm]);
 
   return (
     <div
