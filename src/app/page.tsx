@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { xpForNextLevel } from '@/lib/gamification';
 
 interface RunnerProfile {
   name: string | null;
@@ -25,10 +26,28 @@ interface WeightEntry {
   weight: number;
 }
 
+interface UserStats {
+  totalXp: number;
+  level: number;
+  currentStreak: number;
+  longestStreak: number;
+}
+
+interface Challenge {
+  id: string;
+  title: string;
+  target: number;
+  current: number;
+  xpReward: number;
+  endDate: string;
+}
+
 export default function DashboardPage() {
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
   const [events, setEvents] = useState<RunningEvent[]>([]);
   const [weight, setWeight] = useState<WeightEntry | null>(null);
+  const [stats, setStats] = useState<UserStats | null>(null);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,10 +56,12 @@ export default function DashboardPage() {
 
   const loadData = async () => {
     try {
-      const [profileRes, eventsRes, weightRes] = await Promise.all([
+      const [profileRes, eventsRes, weightRes, statsRes, challengesRes] = await Promise.all([
         fetch('/api/runner-profile'),
         fetch(`/api/running-events?year=${new Date().getFullYear()}&month=${new Date().getMonth() + 1}`),
         fetch('/api/weight?limit=1'),
+        fetch('/api/stats'),
+        fetch('/api/challenges'),
       ]);
 
       if (profileRes.ok) {
@@ -54,6 +75,14 @@ export default function DashboardPage() {
       if (weightRes.ok) {
         const data = await weightRes.json();
         if (Array.isArray(data) && data.length > 0) setWeight(data[0]);
+      }
+      if (statsRes.ok) {
+        const data = await statsRes.json();
+        setStats(data);
+      }
+      if (challengesRes.ok) {
+        const data = await challengesRes.json();
+        setChallenges(data.active || []);
       }
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -115,6 +144,35 @@ export default function DashboardPage() {
         </p>
       </div>
 
+      {/* XP y Racha */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl p-4 text-white">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-2xl">⭐</span>
+            <span className="text-xs bg-white/20 px-2 py-1 rounded-lg">Nivel {stats?.level || 1}</span>
+          </div>
+          <p className="text-2xl font-bold">{stats?.totalXp || 0} XP</p>
+          <div className="mt-2">
+            <div className="h-1.5 bg-white/30 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-white rounded-full"
+                style={{ width: `${stats ? Math.min(100, (stats.totalXp / xpForNextLevel(stats.level)) * 100) : 0}%` }}
+              />
+            </div>
+            <p className="text-xs mt-1 opacity-80">Siguiente nivel: {stats ? xpForNextLevel(stats.level) : 100} XP</p>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl p-4 text-white">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-2xl">🔥</span>
+            <span className="text-xs bg-white/20 px-2 py-1 rounded-lg">Record: {stats?.longestStreak || 0}</span>
+          </div>
+          <p className="text-2xl font-bold">{stats?.currentStreak || 0} dias</p>
+          <p className="text-sm opacity-80 mt-2">Racha actual</p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3 mb-2">
@@ -164,6 +222,32 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Retos activos */}
+      {challenges.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Retos de la semana</h2>
+          <div className="grid sm:grid-cols-3 gap-3">
+            {challenges.slice(0, 3).map((challenge) => {
+              const progress = Math.min(100, (challenge.current / challenge.target) * 100);
+              return (
+                <div key={challenge.id} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                  <div className="flex justify-between items-start mb-2">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{challenge.title}</p>
+                    <span className="text-xs text-green-600 dark:text-green-400">+{challenge.xpReward} XP</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                      <div className="h-full bg-green-500 rounded-full" style={{ width: `${progress}%` }} />
+                    </div>
+                    <span className="text-xs text-gray-500">{challenge.current}/{challenge.target}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-6 mb-8">
         {/* Widget Calendario del Mes */}

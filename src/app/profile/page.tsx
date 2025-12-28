@@ -1,6 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { getRarityColor } from '@/lib/gamification';
+
+interface Achievement {
+  id: string;
+  name: string;
+  icon: string;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  unlocked: boolean;
+  progressPercent: number;
+}
+
+interface AchievementsData {
+  achievements: Achievement[];
+  stats: { unlocked: number; total: number; percent: number };
+}
 
 interface RunnerProfile {
   id: string;
@@ -27,6 +43,7 @@ interface RunnerProfile {
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
+  const [achievements, setAchievements] = useState<AchievementsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -58,9 +75,13 @@ export default function ProfilePage() {
 
   const loadProfile = async () => {
     try {
-      const res = await fetch('/api/runner-profile');
-      if (res.ok) {
-        const data = await res.json();
+      const [profileRes, achievementsRes] = await Promise.all([
+        fetch('/api/runner-profile'),
+        fetch('/api/achievements'),
+      ]);
+
+      if (profileRes.ok) {
+        const data = await profileRes.json();
         setProfile(data);
         if (data) {
           setFormData({
@@ -85,6 +106,10 @@ export default function ProfilePage() {
             maxTimePerSession: data.maxTimePerSession?.toString() || '',
           });
         }
+      }
+
+      if (achievementsRes.ok) {
+        setAchievements(await achievementsRes.json());
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -464,6 +489,83 @@ export default function ProfilePage() {
           </button>
         </div>
       </form>
+
+      {/* Logros */}
+      {achievements && (
+        <div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <span>🏆</span> Logros
+            </h2>
+            <Link href="/achievements" className="text-green-600 dark:text-green-400 text-sm font-medium hover:underline">
+              Ver todos ({achievements.stats.unlocked}/{achievements.stats.total})
+            </Link>
+          </div>
+          <div className="p-4">
+            {/* Progress bar */}
+            <div className="mb-4">
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-gray-500">Progreso total</span>
+                <span className="font-medium text-gray-900 dark:text-white">{achievements.stats.percent}%</span>
+              </div>
+              <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full"
+                  style={{ width: `${achievements.stats.percent}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Recent unlocked */}
+            <div className="mb-4">
+              <p className="text-xs font-medium text-gray-500 uppercase mb-2">Desbloqueados recientes</p>
+              <div className="flex gap-2 flex-wrap">
+                {achievements.achievements
+                  .filter(a => a.unlocked)
+                  .slice(-6)
+                  .reverse()
+                  .map(achievement => (
+                    <div
+                      key={achievement.id}
+                      className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl border-2 ${getRarityColor(achievement.rarity).replace('text-', 'border-')} bg-gray-50 dark:bg-gray-700/50`}
+                      title={achievement.name}
+                    >
+                      {achievement.icon}
+                    </div>
+                  ))}
+                {achievements.achievements.filter(a => a.unlocked).length === 0 && (
+                  <p className="text-sm text-gray-400">Aun no tienes logros desbloqueados</p>
+                )}
+              </div>
+            </div>
+
+            {/* Next to unlock */}
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase mb-2">Proximos a desbloquear</p>
+              <div className="space-y-2">
+                {achievements.achievements
+                  .filter(a => !a.unlocked)
+                  .sort((a, b) => b.progressPercent - a.progressPercent)
+                  .slice(0, 3)
+                  .map(achievement => (
+                    <div key={achievement.id} className="flex items-center gap-3">
+                      <span className="text-xl opacity-50">{achievement.icon}</span>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-700 dark:text-gray-300">{achievement.name}</p>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div className="h-full bg-gray-400 rounded-full" style={{ width: `${achievement.progressPercent}%` }} />
+                          </div>
+                          <span className="text-xs text-gray-500">{achievement.progressPercent}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

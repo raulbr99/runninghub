@@ -93,8 +93,8 @@ export default function AchievementsPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <Link href="/motivation" className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-2 inline-block">
-            ← Volver a motivacion
+          <Link href="/profile" className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-2 inline-block">
+            ← Volver a perfil
           </Link>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Logros</h1>
         </div>
