@@ -280,6 +280,12 @@ export default function ActivityPage() {
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [chatModel, setChatModel] = useState<string>('openai/gpt-4o-mini');
 
+  // Chart toggles (Strava style)
+  const [showPace, setShowPace] = useState(true);
+  const [showElevation, setShowElevation] = useState(true);
+  const [showHeartrate, setShowHeartrate] = useState(false);
+  const [showCadence, setShowCadence] = useState(false);
+
   useEffect(() => {
     async function loadActivity() {
       try {
@@ -318,10 +324,11 @@ export default function ActivityPage() {
     loadSettings();
   }, []);
 
-  // Cargar streams cuando se selecciona la pestaña de gráficas
+  // Cargar streams automaticamente para actividades de Strava
   useEffect(() => {
     async function loadStreams() {
       if (!activity?.stravaId && !activity?.notes?.startsWith('strava:')) return;
+      if (streams) return; // Ya cargados
 
       setLoadingStreams(true);
       try {
@@ -337,10 +344,10 @@ export default function ActivityPage() {
       }
     }
 
-    if (activeTab === 'charts' && !streams && activity) {
+    if (activity) {
       loadStreams();
     }
-  }, [activeTab, activity, params.id, streams]);
+  }, [activity, params.id, streams]);
 
   // Preparar datos para las gráficas
   const chartData = streams?.distance?.data?.map((dist, i) => ({
@@ -439,7 +446,7 @@ export default function ActivityPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+        <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.back()}
@@ -474,71 +481,269 @@ export default function ActivityPage() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-        {/* Type Badge & Stats */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <span className={`text-3xl p-3 rounded-xl ${typeInfo.color} bg-opacity-20`}>
-              {typeInfo.icon}
-            </span>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{activity.sportType || typeInfo.label}</p>
-              <p className={`text-lg font-semibold ${typeInfo.color.replace('bg-', 'text-')}`}>
+      <main className="max-w-6xl mx-auto px-4 py-6 space-y-4">
+        {/* Main Stats Bar */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+          <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
+            <div className="flex items-center gap-3">
+              <span className={`text-2xl p-2 rounded-lg ${typeInfo.color} bg-opacity-20`}>
+                {typeInfo.icon}
+              </span>
+              <span className={`font-medium ${typeInfo.color.replace('bg-', 'text-')}`}>
                 {typeInfo.label}
-              </p>
+              </span>
             </div>
-            {activity.feeling && (
-              <div className="ml-auto text-3xl">
-                {activity.feeling === 1 ? '😫' : activity.feeling === 2 ? '😓' : activity.feeling === 3 ? '😐' : activity.feeling === 4 ? '😊' : '🤩'}
-              </div>
-            )}
+            <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+              {activity.gearName && (
+                <span className="flex items-center gap-1">
+                  <span>👟</span> {activity.gearName}
+                </span>
+              )}
+              {activity.deviceName && (
+                <span className="flex items-center gap-1">
+                  <span>⌚</span> {activity.deviceName}
+                </span>
+              )}
+            </div>
           </div>
-
-          {/* Main Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {activity.distance && (
-              <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{activity.distance.toFixed(2)}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">km</p>
-              </div>
-            )}
-            {activity.movingTime && (
-              <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatTime(activity.movingTime)}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Tiempo</p>
-              </div>
-            )}
-            {activity.pace && (
-              <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{activity.pace}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">min/km</p>
-              </div>
-            )}
-            {activity.elevationGain !== undefined && activity.elevationGain > 0 && (
-              <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{Math.round(activity.elevationGain)}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">m desnivel</p>
-              </div>
-            )}
+          <div className="grid grid-cols-4 divide-x divide-gray-100 dark:divide-gray-700">
+            <div className="p-4 text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{activity.distance?.toFixed(2) || '-'}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Kilometros</p>
+            </div>
+            <div className="p-4 text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{activity.movingTime ? formatTime(activity.movingTime) : '-'}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Tiempo</p>
+            </div>
+            <div className="p-4 text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{activity.pace || '-'}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Ritmo /km</p>
+            </div>
+            <div className="p-4 text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{activity.elevationGain ? Math.round(activity.elevationGain) : '-'}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Desnivel (m)</p>
+            </div>
           </div>
         </div>
 
-        {/* Map */}
-        {activity.mapPolyline && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Ruta</h2>
-            <ActivityMap
-              encodedPolyline={activity.mapPolyline}
-              startLat={activity.startLat}
-              startLng={activity.startLng}
-              endLat={activity.endLat}
-              endLng={activity.endLng}
-            />
+        {/* Strava-style: Splits + Map side by side */}
+        {(hasSplits || activity.mapPolyline) && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Splits Table - Left */}
+            {hasSplits && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+                <div className="p-3 border-b border-gray-100 dark:border-gray-700">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Parciales</h3>
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0">
+                      <tr className="text-xs text-gray-500 dark:text-gray-400 uppercase">
+                        <th className="py-2 px-3 text-left font-medium">Km</th>
+                        <th className="py-2 px-3 text-left font-medium">Ritmo</th>
+                        <th className="py-2 px-3 text-left font-medium">Desn.</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                      {activity.splitsMetric?.map((split, i) => (
+                        <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                          <td className="py-2 px-3 font-medium text-gray-900 dark:text-white">{split.split}</td>
+                          <td className="py-2 px-3 text-gray-700 dark:text-gray-300">{formatPace(split.average_speed)}<span className="text-gray-400 text-xs">/km</span></td>
+                          <td className={`py-2 px-3 ${split.elevation_difference > 0 ? 'text-red-500' : split.elevation_difference < 0 ? 'text-green-500' : 'text-gray-500'}`}>
+                            {split.elevation_difference > 0 ? '+' : ''}{Math.round(split.elevation_difference)}m
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Map - Right */}
+            {activity.mapPolyline && (
+              <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden ${hasSplits ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
+                <div className="h-80">
+                  <ActivityMap
+                    encodedPolyline={activity.mapPolyline}
+                    startLat={activity.startLat}
+                    startLng={activity.startLng}
+                    endLat={activity.endLat}
+                    endLng={activity.endLng}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Strava-style Chart with Toggles */}
+        {isStravaActivity && (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+            {/* Chart */}
+            <div className="h-48 p-4">
+              {loadingStreams ? (
+                <div className="h-full flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+                </div>
+              ) : sampledData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={sampledData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.2} />
+                    <XAxis
+                      dataKey="distance"
+                      stroke="#9CA3AF"
+                      fontSize={10}
+                      tickFormatter={(v) => `${v}`}
+                      axisLine={false}
+                    />
+                    {showElevation && (
+                      <YAxis
+                        yAxisId="elevation"
+                        orientation="left"
+                        stroke="#9CA3AF"
+                        fontSize={10}
+                        tickFormatter={(v) => `${v}m`}
+                        axisLine={false}
+                        width={40}
+                      />
+                    )}
+                    {showPace && (
+                      <YAxis
+                        yAxisId="pace"
+                        orientation="right"
+                        stroke="#9CA3AF"
+                        fontSize={10}
+                        reversed
+                        domain={['auto', 'auto']}
+                        tickFormatter={(v) => {
+                          const min = Math.floor(v);
+                          const sec = Math.round((v - min) * 60);
+                          return `${min}:${sec.toString().padStart(2, '0')}`;
+                        }}
+                        axisLine={false}
+                        width={45}
+                      />
+                    )}
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px', fontSize: '12px' }}
+                      labelStyle={{ color: '#9CA3AF' }}
+                      labelFormatter={(label) => `${label} km`}
+                    />
+                    {showElevation && streams?.altitude && (
+                      <Area
+                        yAxisId="elevation"
+                        type="monotone"
+                        dataKey="altitude"
+                        stroke="#6B7280"
+                        fill="#6B7280"
+                        fillOpacity={0.3}
+                        name="Altitud"
+                      />
+                    )}
+                    {showPace && streams?.velocity_smooth && (
+                      <Line
+                        yAxisId="pace"
+                        type="monotone"
+                        dataKey="pace"
+                        stroke="#3B82F6"
+                        dot={false}
+                        strokeWidth={2}
+                        name="Ritmo"
+                      />
+                    )}
+                    {showHeartrate && streams?.heartrate && (
+                      <Line
+                        yAxisId="elevation"
+                        type="monotone"
+                        dataKey="heartrate"
+                        stroke="#EF4444"
+                        dot={false}
+                        strokeWidth={2}
+                        name="FC"
+                      />
+                    )}
+                    {showCadence && streams?.cadence && (
+                      <Line
+                        yAxisId="elevation"
+                        type="monotone"
+                        dataKey="cadence"
+                        stroke="#8B5CF6"
+                        dot={false}
+                        strokeWidth={2}
+                        name="Cadencia"
+                      />
+                    )}
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-400 text-sm">
+                  Sin datos de streaming
+                </div>
+              )}
+            </div>
+
+            {/* Toggle buttons + Stats */}
+            <div className="border-t border-gray-100 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-center gap-8">
+                {streams?.velocity_smooth && (
+                  <button
+                    onClick={() => setShowPace(!showPace)}
+                    className="flex flex-col items-center gap-1"
+                  >
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Ritmo</span>
+                    <div className={`w-12 h-6 rounded-full transition-colors ${showPace ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                      <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform mt-0.5 ${showPace ? 'translate-x-6' : 'translate-x-0.5'}`}></div>
+                    </div>
+                  </button>
+                )}
+                {streams?.heartrate && (
+                  <button
+                    onClick={() => setShowHeartrate(!showHeartrate)}
+                    className="flex flex-col items-center gap-1"
+                  >
+                    <span className="text-xs text-gray-500 dark:text-gray-400">FC</span>
+                    <div className={`w-12 h-6 rounded-full transition-colors ${showHeartrate ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                      <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform mt-0.5 ${showHeartrate ? 'translate-x-6' : 'translate-x-0.5'}`}></div>
+                    </div>
+                  </button>
+                )}
+                {streams?.cadence && (
+                  <button
+                    onClick={() => setShowCadence(!showCadence)}
+                    className="flex flex-col items-center gap-1"
+                  >
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Cadencia</span>
+                    <div className={`w-12 h-6 rounded-full transition-colors ${showCadence ? 'bg-purple-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                      <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform mt-0.5 ${showCadence ? 'translate-x-6' : 'translate-x-0.5'}`}></div>
+                    </div>
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center justify-center gap-12 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Promedio</p>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-white">{activity.pace || '-'}<span className="text-xs text-gray-400">/km</span></p>
+                </div>
+                {activity.heartRate && (
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">FC Media</p>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-white">{activity.heartRate}<span className="text-xs text-gray-400"> bpm</span></p>
+                  </div>
+                )}
+                {activity.averageCadence && (
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Cadencia</p>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-white">{Math.round(activity.averageCadence * 2)}<span className="text-xs text-gray-400"> ppm</span></p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
         {/* Tabs */}
-        {(isStravaActivity || hasSplits || hasLaps || hasSegments) && (
+        {(hasLaps || hasSegments || isStravaActivity) && (
           <div className="flex gap-2 overflow-x-auto pb-2">
             <button
               onClick={() => setActiveTab('overview')}
@@ -548,7 +753,7 @@ export default function ActivityPage() {
                   : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300'
               }`}
             >
-              Resumen
+              Detalles
             </button>
             <button
               onClick={() => setActiveTab('analysis')}
@@ -560,30 +765,6 @@ export default function ActivityPage() {
             >
               Analisis IA
             </button>
-            {isStravaActivity && (
-              <button
-                onClick={() => setActiveTab('charts')}
-                className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-                  activeTab === 'charts'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300'
-                }`}
-              >
-                Graficas
-              </button>
-            )}
-            {hasSplits && (
-              <button
-                onClick={() => setActiveTab('splits')}
-                className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-                  activeTab === 'splits'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300'
-                }`}
-              >
-                Splits ({activity.splitsMetric?.length})
-              </button>
-            )}
             {hasLaps && (
               <button
                 onClick={() => setActiveTab('laps')}
@@ -808,274 +989,6 @@ export default function ActivityPage() {
               </div>
             )}
           </>
-        )}
-
-        {/* Charts Tab */}
-        {activeTab === 'charts' && (
-          <div className="space-y-6">
-            {loadingStreams ? (
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
-                <span className="ml-3 text-gray-600 dark:text-gray-400">Cargando datos...</span>
-              </div>
-            ) : sampledData.length === 0 ? (
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm text-center text-gray-500 dark:text-gray-400">
-                No hay datos de streaming disponibles para esta actividad
-              </div>
-            ) : (
-              <>
-                {/* Altitude Chart */}
-                {streams?.altitude && (
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Altitud</h3>
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={sampledData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                          <XAxis
-                            dataKey="distance"
-                            stroke="#9CA3AF"
-                            fontSize={12}
-                            tickFormatter={(v) => `${v} km`}
-                          />
-                          <YAxis stroke="#9CA3AF" fontSize={12} tickFormatter={(v) => `${v} m`} />
-                          <Tooltip
-                            contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
-                            labelStyle={{ color: '#9CA3AF' }}
-                            formatter={(value) => [`${Math.round(value as number)} m`, 'Altitud']}
-                            labelFormatter={(label) => `${label} km`}
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="altitude"
-                            stroke="#10B981"
-                            fill="#10B981"
-                            fillOpacity={0.3}
-                          />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                )}
-
-                {/* Heart Rate Chart */}
-                {streams?.heartrate && (
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Frecuencia Cardiaca</h3>
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={sampledData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                          <XAxis
-                            dataKey="distance"
-                            stroke="#9CA3AF"
-                            fontSize={12}
-                            tickFormatter={(v) => `${v} km`}
-                          />
-                          <YAxis stroke="#9CA3AF" fontSize={12} domain={['auto', 'auto']} />
-                          <Tooltip
-                            contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
-                            labelStyle={{ color: '#9CA3AF' }}
-                            formatter={(value) => [`${Math.round(value as number)} bpm`, 'FC']}
-                            labelFormatter={(label) => `${label} km`}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="heartrate"
-                            stroke="#EF4444"
-                            dot={false}
-                            strokeWidth={2}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                )}
-
-                {/* Pace Chart */}
-                {streams?.velocity_smooth && (
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Ritmo</h3>
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={sampledData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                          <XAxis
-                            dataKey="distance"
-                            stroke="#9CA3AF"
-                            fontSize={12}
-                            tickFormatter={(v) => `${v} km`}
-                          />
-                          <YAxis
-                            stroke="#9CA3AF"
-                            fontSize={12}
-                            reversed
-                            domain={['auto', 'auto']}
-                            tickFormatter={(v) => {
-                              const min = Math.floor(v);
-                              const sec = Math.round((v - min) * 60);
-                              return `${min}:${sec.toString().padStart(2, '0')}`;
-                            }}
-                          />
-                          <Tooltip
-                            contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
-                            labelStyle={{ color: '#9CA3AF' }}
-                            formatter={(value) => {
-                              const v = value as number;
-                              const min = Math.floor(v);
-                              const sec = Math.round((v - min) * 60);
-                              return [`${min}:${sec.toString().padStart(2, '0')} /km`, 'Ritmo'];
-                            }}
-                            labelFormatter={(label) => `${label} km`}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="pace"
-                            stroke="#3B82F6"
-                            dot={false}
-                            strokeWidth={2}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                )}
-
-                {/* Cadence Chart */}
-                {streams?.cadence && (
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Cadencia</h3>
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={sampledData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                          <XAxis
-                            dataKey="distance"
-                            stroke="#9CA3AF"
-                            fontSize={12}
-                            tickFormatter={(v) => `${v} km`}
-                          />
-                          <YAxis stroke="#9CA3AF" fontSize={12} domain={['auto', 'auto']} />
-                          <Tooltip
-                            contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
-                            labelStyle={{ color: '#9CA3AF' }}
-                            formatter={(value) => [`${Math.round(value as number)} ppm`, 'Cadencia']}
-                            labelFormatter={(label) => `${label} km`}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="cadence"
-                            stroke="#8B5CF6"
-                            dot={false}
-                            strokeWidth={2}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                )}
-
-                {/* Power Chart */}
-                {streams?.watts && (
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Potencia</h3>
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={sampledData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                          <XAxis
-                            dataKey="distance"
-                            stroke="#9CA3AF"
-                            fontSize={12}
-                            tickFormatter={(v) => `${v} km`}
-                          />
-                          <YAxis stroke="#9CA3AF" fontSize={12} domain={[0, 'auto']} />
-                          <Tooltip
-                            contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
-                            labelStyle={{ color: '#9CA3AF' }}
-                            formatter={(value) => [`${Math.round(value as number)} W`, 'Potencia']}
-                            labelFormatter={(label) => `${label} km`}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="watts"
-                            stroke="#F59E0B"
-                            dot={false}
-                            strokeWidth={2}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                )}
-
-                {/* Grade Chart */}
-                {streams?.grade_smooth && (
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Pendiente</h3>
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={sampledData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                          <XAxis
-                            dataKey="distance"
-                            stroke="#9CA3AF"
-                            fontSize={12}
-                            tickFormatter={(v) => `${v} km`}
-                          />
-                          <YAxis stroke="#9CA3AF" fontSize={12} tickFormatter={(v) => `${v}%`} />
-                          <Tooltip
-                            contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
-                            labelStyle={{ color: '#9CA3AF' }}
-                            formatter={(value) => [`${(value as number).toFixed(1)}%`, 'Pendiente']}
-                            labelFormatter={(label) => `${label} km`}
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="grade"
-                            stroke="#14B8A6"
-                            fill="#14B8A6"
-                            fillOpacity={0.3}
-                          />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Splits Tab */}
-        {activeTab === 'splits' && activity.splitsMetric && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Splits por Kilometro</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                    <th className="pb-2 font-medium">Km</th>
-                    <th className="pb-2 font-medium">Ritmo</th>
-                    <th className="pb-2 font-medium">Desnivel</th>
-                    <th className="pb-2 font-medium">Tiempo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {activity.splitsMetric.map((split, i) => (
-                    <tr key={i} className="border-b border-gray-100 dark:border-gray-700">
-                      <td className="py-3 font-medium text-gray-900 dark:text-white">{split.split}</td>
-                      <td className="py-3 text-gray-900 dark:text-white">{formatPace(split.average_speed)} /km</td>
-                      <td className="py-3 text-gray-600 dark:text-gray-300">
-                        {split.elevation_difference > 0 ? '+' : ''}{Math.round(split.elevation_difference)} m
-                      </td>
-                      <td className="py-3 text-gray-600 dark:text-gray-300">{formatTime(split.moving_time)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
         )}
 
         {/* Laps Tab */}
