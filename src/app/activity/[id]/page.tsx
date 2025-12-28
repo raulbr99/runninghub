@@ -286,6 +286,9 @@ export default function ActivityPage() {
   const [showHeartrate, setShowHeartrate] = useState(false);
   const [showCadence, setShowCadence] = useState(false);
 
+  // Map highlight
+  const [hoveredKm, setHoveredKm] = useState<number | null>(null);
+
   useEffect(() => {
     async function loadActivity() {
       try {
@@ -546,7 +549,12 @@ export default function ActivityPage() {
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                       {activity.splitsMetric?.map((split, i) => (
-                        <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <tr
+                          key={i}
+                          className={`cursor-pointer transition-colors ${hoveredKm === split.split ? 'bg-amber-100 dark:bg-amber-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
+                          onMouseEnter={() => setHoveredKm(split.split)}
+                          onMouseLeave={() => setHoveredKm(null)}
+                        >
                           <td className="py-2 px-3 font-medium text-gray-900 dark:text-white">{split.split}</td>
                           <td className="py-2 px-3 text-gray-700 dark:text-gray-300">{formatPace(split.average_speed)}<span className="text-gray-400 text-xs">/km</span></td>
                           <td className={`py-2 px-3 ${split.elevation_difference > 0 ? 'text-red-500' : split.elevation_difference < 0 ? 'text-green-500' : 'text-gray-500'}`}>
@@ -569,6 +577,7 @@ export default function ActivityPage() {
                     startLat={activity.startLat}
                     startLng={activity.startLng}
                     endLat={activity.endLat}
+                    highlightedKm={hoveredKm}
                     endLng={activity.endLng}
                   />
                 </div>
