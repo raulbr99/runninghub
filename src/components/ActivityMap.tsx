@@ -144,20 +144,22 @@ export default function ActivityMap({
     const startDist = (highlightedKm - 1) * 1000 * scale;
     const endDist = highlightedKm * 1000 * scale;
 
-    // Encontrar indices
+    // Encontrar indices exactos
     let startIdx = 0;
     let endIdx = coordinates.length - 1;
 
+    // Primer punto que esta en o despues del inicio del km
     for (let i = 0; i < distances.length; i++) {
       if (distances[i] >= startDist) {
-        startIdx = Math.max(0, i - 1);
+        startIdx = i;
         break;
       }
     }
 
-    for (let i = startIdx; i < distances.length; i++) {
-      if (distances[i] >= endDist) {
-        endIdx = Math.min(i, coordinates.length - 1);
+    // Ultimo punto que esta en o antes del fin del km
+    for (let i = distances.length - 1; i >= startIdx; i--) {
+      if (distances[i] <= endDist) {
+        endIdx = i;
         break;
       }
     }
