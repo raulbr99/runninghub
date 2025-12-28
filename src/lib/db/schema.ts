@@ -226,6 +226,113 @@ export const stravaTokens = pgTable('strava_tokens', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// ==========================================
+// SISTEMA DE MOTIVACIÓN
+// ==========================================
+
+// Estadísticas del usuario (XP, nivel, rachas)
+export const userStats = pgTable('user_stats', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  totalXp: integer('total_xp').default(0).notNull(),
+  level: integer('level').default(1).notNull(),
+  // Rachas
+  currentStreak: integer('current_streak').default(0).notNull(),
+  longestStreak: integer('longest_streak').default(0).notNull(),
+  lastActivityDate: date('last_activity_date'),
+  // Totales
+  totalWorkouts: integer('total_workouts').default(0).notNull(),
+  totalDistance: real('total_distance').default(0).notNull(), // km
+  totalTime: integer('total_time').default(0).notNull(), // minutos
+  totalBooksRead: integer('total_books_read').default(0).notNull(),
+  totalPagesRead: integer('total_pages_read').default(0).notNull(),
+  // Timestamps
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Logros/Badges desbloqueados
+export const achievements = pgTable('achievements', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  achievementId: text('achievement_id').notNull(), // ID único del logro
+  unlockedAt: timestamp('unlocked_at').defaultNow().notNull(),
+  progress: integer('progress').default(0), // Progreso actual hacia el logro
+});
+
+// Retos activos
+export const challenges = pgTable('challenges', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  type: text('type').notNull(), // 'weekly_distance' | 'weekly_workouts' | 'read_pages' | 'streak'
+  title: text('title').notNull(),
+  description: text('description'),
+  target: integer('target').notNull(), // Meta a alcanzar
+  current: integer('current').default(0).notNull(), // Progreso actual
+  xpReward: integer('xp_reward').default(100).notNull(),
+  startDate: date('start_date').notNull(),
+  endDate: date('end_date').notNull(),
+  completed: integer('completed').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Lista de libros
+export const books = pgTable('books', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  title: text('title').notNull(),
+  author: text('author'),
+  totalPages: integer('total_pages'),
+  currentPage: integer('current_page').default(0).notNull(),
+  status: text('status').default('to_read').notNull(), // 'to_read' | 'reading' | 'completed'
+  category: text('category'), // 'running' | 'nutrition' | 'mindset' | 'other'
+  rating: integer('rating'), // 1-5
+  notes: text('notes'),
+  startedAt: date('started_at'),
+  finishedAt: date('finished_at'),
+  coverUrl: text('cover_url'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Registro de lectura diaria
+export const readingLog = pgTable('reading_log', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  bookId: uuid('book_id').references(() => books.id, { onDelete: 'cascade' }).notNull(),
+  date: date('date').notNull(),
+  pagesRead: integer('pages_read').notNull(),
+  minutesRead: integer('minutes_read'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Hábitos diarios
+export const dailyHabits = pgTable('daily_habits', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  date: date('date').notNull(),
+  // Hábitos de entrenamiento
+  didWorkout: integer('did_workout').default(0).notNull(),
+  workoutXp: integer('workout_xp').default(0).notNull(),
+  // Hábitos de lectura
+  didRead: integer('did_read').default(0).notNull(),
+  readingXp: integer('reading_xp').default(0).notNull(),
+  // Hábitos de nutrición
+  loggedMeals: integer('logged_meals').default(0).notNull(),
+  nutritionXp: integer('nutrition_xp').default(0).notNull(),
+  // Hábitos de peso
+  loggedWeight: integer('logged_weight').default(0).notNull(),
+  weightXp: integer('weight_xp').default(0).notNull(),
+  // Total del día
+  totalXp: integer('total_xp').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Frases motivacionales personalizadas
+export const motivationalQuotes = pgTable('motivational_quotes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  quote: text('quote').notNull(),
+  author: text('author'),
+  category: text('category'), // 'training' | 'consistency' | 'achievement' | 'reading'
+  shownAt: timestamp('shown_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 // Types para TypeScript
 export type Conversation = typeof conversations.$inferSelect;
 export type NewConversation = typeof conversations.$inferInsert;
@@ -245,3 +352,17 @@ export type AppSettings = typeof appSettings.$inferSelect;
 export type NewAppSettings = typeof appSettings.$inferInsert;
 export type StravaToken = typeof stravaTokens.$inferSelect;
 export type NewStravaToken = typeof stravaTokens.$inferInsert;
+export type UserStats = typeof userStats.$inferSelect;
+export type NewUserStats = typeof userStats.$inferInsert;
+export type Achievement = typeof achievements.$inferSelect;
+export type NewAchievement = typeof achievements.$inferInsert;
+export type Challenge = typeof challenges.$inferSelect;
+export type NewChallenge = typeof challenges.$inferInsert;
+export type Book = typeof books.$inferSelect;
+export type NewBook = typeof books.$inferInsert;
+export type ReadingLog = typeof readingLog.$inferSelect;
+export type NewReadingLog = typeof readingLog.$inferInsert;
+export type DailyHabit = typeof dailyHabits.$inferSelect;
+export type NewDailyHabit = typeof dailyHabits.$inferInsert;
+export type MotivationalQuote = typeof motivationalQuotes.$inferSelect;
+export type NewMotivationalQuote = typeof motivationalQuotes.$inferInsert;
