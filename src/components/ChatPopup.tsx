@@ -9,6 +9,32 @@ interface Message {
   content: string;
 }
 
+interface RunnerProfile {
+  id: string;
+  name: string | null;
+  age: number | null;
+  weight: number | null;
+  height: number | null;
+  yearsRunning: number | null;
+  weeklyKm: number | null;
+  pb5k: string | null;
+  pb10k: string | null;
+  pbHalfMarathon: string | null;
+  pbMarathon: string | null;
+  currentGoal: string | null;
+  targetRace: string | null;
+  injuries: string | null;
+  healthNotes: string | null;
+}
+
+interface WeightEntry {
+  id: string;
+  date: string;
+  weight: number;
+  bodyFat: number | null;
+  muscleMass: number | null;
+}
+
 interface PageContext {
   page: string;
   data?: Record<string, unknown>;
@@ -27,6 +53,84 @@ const getPageContext = (pathname: string): PageContext => {
   return { page: 'general' };
 };
 
+const buildSystemPrompt = (profile: RunnerProfile | null, latestWeight: WeightEntry | null, pageContext: PageContext) => {
+  let basePrompt = `Eres un coach integral experto en running, nutricion y salud. Tu conocimiento incluye:
+
+RUNNING:
+- Planes de entrenamiento personalizados (5K, 10K, media maraton, maraton, trail)
+- Tecnica de carrera y biomecanica
+- Prevencion y recuperacion de lesiones
+- Estrategias de carrera y pacing
+
+NUTRICION:
+- Dietas para deportistas y corredores
+- Macronutrientes y timing de comidas
+- Suplementacion deportiva
+- Hidratacion
+
+SALUD Y PESO:
+- Control de peso corporal
+- Composicion corporal (grasa, musculo)
+- Recuperacion y descanso
+- Salud general del deportista
+
+TOOLS DISPONIBLES:
+1. save_runner_profile - Guarda informacion del corredor
+2. get_running_events - Obtiene entrenamientos del calendario
+3. create_running_event - Crea entrenamientos en el calendario
+4. log_weight - Registra el peso del usuario
+5. get_weight_history - Obtiene historial de peso
+6. log_meal - Registra comidas
+7. get_nutrition_summary - Obtiene resumen nutricional del dia
+8. set_nutrition_goals - Establece objetivos nutricionales
+
+Usa estas herramientas proactivamente. Por ejemplo:
+- Si dicen "peso 75kg", usa log_weight
+- Si dicen "desayune huevos con tostadas", usa log_meal
+- Si preguntan "que entrenos tengo", usa get_running_events
+- Si dicen "ponme un rodaje de 10km el lunes", usa create_running_event
+
+CONTEXTO ACTUAL:
+- El usuario esta en la pagina: ${pageContext.page}
+- ${pageContext.data?.description || ''}`;
+
+  if (profile || latestWeight) {
+    const profileInfo: string[] = [];
+    if (profile?.name) profileInfo.push(`Nombre: ${profile.name}`);
+    if (profile?.age) profileInfo.push(`Edad: ${profile.age} anos`);
+
+    if (latestWeight) {
+      profileInfo.push(`Peso actual: ${latestWeight.weight} kg (registrado el ${latestWeight.date})`);
+      if (latestWeight.bodyFat) profileInfo.push(`Grasa corporal: ${latestWeight.bodyFat}%`);
+      if (latestWeight.muscleMass) profileInfo.push(`Masa muscular: ${latestWeight.muscleMass} kg`);
+    } else if (profile?.weight) {
+      profileInfo.push(`Peso: ${profile.weight} kg`);
+    }
+
+    if (profile?.height) profileInfo.push(`Altura: ${profile.height} cm`);
+    if (profile?.yearsRunning) profileInfo.push(`Experiencia: ${profile.yearsRunning} anos corriendo`);
+    if (profile?.weeklyKm) profileInfo.push(`Volumen semanal: ${profile.weeklyKm} km`);
+
+    const pbs: string[] = [];
+    if (profile?.pb5k) pbs.push(`5K: ${profile.pb5k}`);
+    if (profile?.pb10k) pbs.push(`10K: ${profile.pb10k}`);
+    if (profile?.pbHalfMarathon) pbs.push(`Media: ${profile.pbHalfMarathon}`);
+    if (profile?.pbMarathon) pbs.push(`Maraton: ${profile.pbMarathon}`);
+    if (pbs.length > 0) profileInfo.push(`Marcas: ${pbs.join(', ')}`);
+
+    if (profile?.currentGoal) profileInfo.push(`Objetivo: ${profile.currentGoal}`);
+    if (profile?.targetRace) profileInfo.push(`Carrera objetivo: ${profile.targetRace}`);
+    if (profile?.injuries) profileInfo.push(`Lesiones: ${profile.injuries}`);
+    if (profile?.healthNotes) profileInfo.push(`Salud: ${profile.healthNotes}`);
+
+    if (profileInfo.length > 0) {
+      basePrompt += `\n\n--- PERFIL DEL USUARIO ---\n${profileInfo.join('\n')}\n--- FIN PERFIL ---`;
+    }
+  }
+
+  return basePrompt;
+};
+
 export default function ChatPopup() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
@@ -34,6 +138,8 @@ export default function ChatPopup() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [model, setModel] = useState('openai/gpt-4o');
+  const [profile, setProfile] = useState<RunnerProfile | null>(null);
+  const [latestWeight, setLatestWeight] = useState<WeightEntry | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -41,8 +147,14 @@ export default function ChatPopup() {
   if (pathname === '/coach') return null;
 
   useEffect(() => {
+    // Cargar datos iniciales
+    loadProfile();
+    loadLatestWeight();
+    loadSettings();
+  }, []);
+
+  useEffect(() => {
     if (isOpen) {
-      loadSettings();
       inputRef.current?.focus();
     }
   }, [isOpen]);
@@ -50,6 +162,32 @@ export default function ChatPopup() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const loadProfile = async () => {
+    try {
+      const res = await fetch('/api/runner-profile');
+      if (res.ok) {
+        const data = await res.json();
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  };
+
+  const loadLatestWeight = async () => {
+    try {
+      const res = await fetch('/api/weight?limit=1');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setLatestWeight(data[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading weight:', error);
+    }
+  };
 
   const loadSettings = async () => {
     try {
@@ -63,24 +201,6 @@ export default function ChatPopup() {
     }
   };
 
-  const buildSystemPrompt = () => {
-    const context = getPageContext(pathname);
-
-    return `Eres un asistente rapido de RunningHub. Responde de forma concisa y directa.
-
-CONTEXTO ACTUAL:
-- Pagina: ${context.page}
-- Descripcion: ${context.data?.description || 'Sin descripcion'}
-
-Puedes ayudar con:
-- Running y entrenamientos
-- Nutricion y dietas
-- Control de peso
-- Lectura y motivacion
-
-Responde en espanol, de forma breve (2-3 frases max) a menos que pidan mas detalle.`;
-  };
-
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
 
@@ -91,8 +211,10 @@ Responde en espanol, de forma breve (2-3 frases max) a menos que pidan mas detal
     setLoading(true);
 
     try {
+      const context = getPageContext(pathname);
+      const systemPrompt = buildSystemPrompt(profile, latestWeight, context);
       const apiMessages = [
-        { role: 'system', content: buildSystemPrompt() },
+        { role: 'system', content: systemPrompt },
         ...newMessages.map(msg => ({ role: msg.role, content: msg.content }))
       ];
 
@@ -132,6 +254,8 @@ Responde en espanol, de forma breve (2-3 frases max) a menos que pidan mas detal
               assistantContent += parsed.content;
               setMessages([...newMessages, { role: 'assistant', content: assistantContent }]);
             }
+            if (parsed.profileSaved) loadProfile();
+            if (parsed.weightLogged) loadLatestWeight();
           } catch { /* ignore */ }
         }
       }
