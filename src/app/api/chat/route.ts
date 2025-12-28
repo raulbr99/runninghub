@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { runnerProfile, runningEvents, weightEntries, nutritionEntries, nutritionGoals } from '@/lib/db/schema';
-import { and, gte, lte, desc } from 'drizzle-orm';
+import { and, gte, lte, desc, eq } from 'drizzle-orm';
 
 // Tool definitions
 const saveProfileTool = {
@@ -188,7 +188,7 @@ async function executeProfileSave(args: Record<string, unknown>) {
     if (profiles.length === 0) {
       await db.insert(runnerProfile).values(updateData);
     } else {
-      await db.update(runnerProfile).set(updateData);
+      await db.update(runnerProfile).set(updateData).where(eq(runnerProfile.id, profiles[0].id));
     }
     return { success: true, message: 'Perfil actualizado correctamente' };
   } catch (error) {
@@ -345,7 +345,7 @@ async function executeSetNutritionGoals(args: Record<string, unknown>) {
     if (existing.length === 0) {
       await db.insert(nutritionGoals).values(data);
     } else {
-      await db.update(nutritionGoals).set(data);
+      await db.update(nutritionGoals).set(data).where(eq(nutritionGoals.id, existing[0].id));
     }
     return { success: true, message: 'Objetivos actualizados' };
   } catch (error) {

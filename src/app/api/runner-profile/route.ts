@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { runnerProfile } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 export async function GET() {
   try {
@@ -26,7 +27,7 @@ export async function PUT(request: NextRequest) {
       const [profile] = await db.insert(runnerProfile).values(updateData).returning();
       return NextResponse.json(profile);
     } else {
-      const [profile] = await db.update(runnerProfile).set(updateData).returning();
+      const [profile] = await db.update(runnerProfile).set(updateData).where(eq(runnerProfile.id, profiles[0].id)).returning();
       return NextResponse.json(profile);
     }
   } catch (error) {

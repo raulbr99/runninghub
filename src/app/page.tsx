@@ -160,7 +160,92 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6 mb-8">
+      <div className="grid lg:grid-cols-3 gap-6 mb-8">
+        {/* Widget Calendario del Mes */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              {new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+            </h2>
+            <Link href="/calendar" className="text-green-600 dark:text-green-400 text-sm font-medium hover:underline">
+              Ver todo
+            </Link>
+          </div>
+          <div className="p-4">
+            {(() => {
+              const now = new Date();
+              const year = now.getFullYear();
+              const month = now.getMonth();
+              const firstDay = new Date(year, month, 1);
+              const lastDay = new Date(year, month + 1, 0);
+              const startDay = (firstDay.getDay() + 6) % 7;
+              const daysInMonth = lastDay.getDate();
+              const todayDate = now.getDate();
+
+              const eventDates = new Set(events.map(e => {
+                const d = new Date(e.date);
+                if (d.getMonth() === month && d.getFullYear() === year) {
+                  return d.getDate();
+                }
+                return null;
+              }).filter(Boolean));
+
+              const weeks = [];
+              let days = [];
+
+              for (let i = 0; i < startDay; i++) {
+                days.push(<div key={`empty-${i}`} className="h-8" />);
+              }
+
+              for (let day = 1; day <= daysInMonth; day++) {
+                const hasEvent = eventDates.has(day);
+                const isToday = day === todayDate;
+                days.push(
+                  <div
+                    key={day}
+                    className={`h-8 w-8 flex items-center justify-center text-sm rounded-full relative ${
+                      isToday
+                        ? 'bg-green-600 text-white font-bold'
+                        : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    {day}
+                    {hasEvent && !isToday && (
+                      <span className="absolute bottom-0.5 w-1 h-1 bg-green-500 rounded-full" />
+                    )}
+                    {hasEvent && isToday && (
+                      <span className="absolute bottom-0.5 w-1 h-1 bg-white rounded-full" />
+                    )}
+                  </div>
+                );
+
+                if ((startDay + day) % 7 === 0 || day === daysInMonth) {
+                  weeks.push(
+                    <div key={`week-${weeks.length}`} className="grid grid-cols-7 gap-1">
+                      {days}
+                    </div>
+                  );
+                  days = [];
+                }
+              }
+
+              return (
+                <div className="space-y-1">
+                  <div className="grid grid-cols-7 gap-1 mb-2">
+                    {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d) => (
+                      <div key={d} className="h-6 flex items-center justify-center text-xs font-medium text-gray-400">
+                        {d}
+                      </div>
+                    ))}
+                  </div>
+                  {weeks}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+
+        {/* Entrenamiento de hoy */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Entrenamiento de hoy</h2>
@@ -200,6 +285,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Proximos entrenos */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Proximos entrenos</h2>

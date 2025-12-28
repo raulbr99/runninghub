@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { nutritionGoals } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 export async function GET() {
   try {
@@ -32,7 +33,7 @@ export async function PUT(request: NextRequest) {
       const [goals] = await db.insert(nutritionGoals).values(goalData).returning();
       return NextResponse.json(goals);
     } else {
-      const [goals] = await db.update(nutritionGoals).set(goalData).returning();
+      const [goals] = await db.update(nutritionGoals).set(goalData).where(eq(nutritionGoals.id, existing[0].id)).returning();
       return NextResponse.json(goals);
     }
   } catch (error) {

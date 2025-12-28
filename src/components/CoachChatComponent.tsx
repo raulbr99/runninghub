@@ -34,7 +34,15 @@ interface Conversation {
   updatedAt: string;
 }
 
-const buildSystemPrompt = (profile: RunnerProfile | null) => {
+interface WeightEntry {
+  id: string;
+  date: string;
+  weight: number;
+  bodyFat: number | null;
+  muscleMass: number | null;
+}
+
+const buildSystemPrompt = (profile: RunnerProfile | null, latestWeight: WeightEntry | null) => {
   let basePrompt = `Eres un coach integral experto en running, nutricion y salud. Tu conocimiento incluye:
 
 RUNNING:
@@ -71,26 +79,35 @@ Usa estas herramientas proactivamente. Por ejemplo:
 - Si preguntan "que entrenos tengo", usa get_running_events
 - Si dicen "ponme un rodaje de 10km el lunes", usa create_running_event`;
 
-  if (profile) {
+  if (profile || latestWeight) {
     const profileInfo: string[] = [];
-    if (profile.name) profileInfo.push(`Nombre: ${profile.name}`);
-    if (profile.age) profileInfo.push(`Edad: ${profile.age} anos`);
-    if (profile.weight) profileInfo.push(`Peso: ${profile.weight} kg`);
-    if (profile.height) profileInfo.push(`Altura: ${profile.height} cm`);
-    if (profile.yearsRunning) profileInfo.push(`Experiencia: ${profile.yearsRunning} anos corriendo`);
-    if (profile.weeklyKm) profileInfo.push(`Volumen semanal: ${profile.weeklyKm} km`);
+    if (profile?.name) profileInfo.push(`Nombre: ${profile.name}`);
+    if (profile?.age) profileInfo.push(`Edad: ${profile.age} anos`);
+
+    // Usar el peso del historial si existe, sino el del perfil
+    if (latestWeight) {
+      profileInfo.push(`Peso actual: ${latestWeight.weight} kg (registrado el ${latestWeight.date})`);
+      if (latestWeight.bodyFat) profileInfo.push(`Grasa corporal: ${latestWeight.bodyFat}%`);
+      if (latestWeight.muscleMass) profileInfo.push(`Masa muscular: ${latestWeight.muscleMass} kg`);
+    } else if (profile?.weight) {
+      profileInfo.push(`Peso: ${profile.weight} kg`);
+    }
+
+    if (profile?.height) profileInfo.push(`Altura: ${profile.height} cm`);
+    if (profile?.yearsRunning) profileInfo.push(`Experiencia: ${profile.yearsRunning} anos corriendo`);
+    if (profile?.weeklyKm) profileInfo.push(`Volumen semanal: ${profile.weeklyKm} km`);
 
     const pbs: string[] = [];
-    if (profile.pb5k) pbs.push(`5K: ${profile.pb5k}`);
-    if (profile.pb10k) pbs.push(`10K: ${profile.pb10k}`);
-    if (profile.pbHalfMarathon) pbs.push(`Media: ${profile.pbHalfMarathon}`);
-    if (profile.pbMarathon) pbs.push(`Maraton: ${profile.pbMarathon}`);
+    if (profile?.pb5k) pbs.push(`5K: ${profile.pb5k}`);
+    if (profile?.pb10k) pbs.push(`10K: ${profile.pb10k}`);
+    if (profile?.pbHalfMarathon) pbs.push(`Media: ${profile.pbHalfMarathon}`);
+    if (profile?.pbMarathon) pbs.push(`Maraton: ${profile.pbMarathon}`);
     if (pbs.length > 0) profileInfo.push(`Marcas: ${pbs.join(', ')}`);
 
-    if (profile.currentGoal) profileInfo.push(`Objetivo: ${profile.currentGoal}`);
-    if (profile.targetRace) profileInfo.push(`Carrera objetivo: ${profile.targetRace}`);
-    if (profile.injuries) profileInfo.push(`Lesiones: ${profile.injuries}`);
-    if (profile.healthNotes) profileInfo.push(`Salud: ${profile.healthNotes}`);
+    if (profile?.currentGoal) profileInfo.push(`Objetivo: ${profile.currentGoal}`);
+    if (profile?.targetRace) profileInfo.push(`Carrera objetivo: ${profile.targetRace}`);
+    if (profile?.injuries) profileInfo.push(`Lesiones: ${profile.injuries}`);
+    if (profile?.healthNotes) profileInfo.push(`Salud: ${profile.healthNotes}`);
 
     if (profileInfo.length > 0) {
       basePrompt += `\n\n--- PERFIL DEL USUARIO ---\n${profileInfo.join('\n')}\n--- FIN PERFIL ---`;
@@ -117,12 +134,15 @@ export default function CoachChatComponent({ conversationId, onConversationCreat
   const [showHistory, setShowHistory] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
+  const [latestWeight, setLatestWeight] = useState<WeightEntry | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadConversations();
     loadProfile();
     loadSettings();
+    loadLatestWeight();
   }, []);
 
   const loadSettings = async () => {
@@ -160,6 +180,20 @@ export default function CoachChatComponent({ conversationId, onConversationCreat
       }
     } catch (error) {
       console.error('Error loading profile:', error);
+    }
+  };
+
+  const loadLatestWeight = async () => {
+    try {
+      const res = await fetch('/api/weight?limit=1');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setLatestWeight(data[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading weight:', error);
     }
   };
 
@@ -249,7 +283,7 @@ export default function CoachChatComponent({ conversationId, onConversationCreat
     if (convId) await saveMessage(convId, 'user', input);
 
     try {
-      const systemPrompt = buildSystemPrompt(profile);
+      const systemPrompt = buildSystemPrompt(profile, latestWeight);
       const apiMessages = [
         { role: 'system', content: systemPrompt },
         ...newMessages.map(msg => ({ role: msg.role, content: msg.content }))
@@ -292,6 +326,7 @@ export default function CoachChatComponent({ conversationId, onConversationCreat
               setMessages([...newMessages, { role: 'assistant', content: assistantContent }]);
             }
             if (parsed.profileSaved) loadProfile();
+            if (parsed.weightLogged) loadLatestWeight();
           } catch { /* ignore */ }
         }
       }
@@ -306,6 +341,7 @@ export default function CoachChatComponent({ conversationId, onConversationCreat
       setMessages([...newMessages, { role: 'assistant', content: 'Error al obtener respuesta.' }]);
     } finally {
       setLoading(false);
+      inputRef.current?.focus();
     }
   };
 
@@ -610,6 +646,7 @@ export default function CoachChatComponent({ conversationId, onConversationCreat
 
               <div className="flex-1 relative">
                 <input
+                  ref={inputRef}
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}

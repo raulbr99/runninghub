@@ -62,27 +62,29 @@ export default function ProfilePage() {
       if (res.ok) {
         const data = await res.json();
         setProfile(data);
-        setFormData({
-          name: data.name || '',
-          age: data.age?.toString() || '',
-          weight: data.weight?.toString() || '',
-          height: data.height?.toString() || '',
-          yearsRunning: data.yearsRunning?.toString() || '',
-          weeklyKm: data.weeklyKm?.toString() || '',
-          pb5k: data.pb5k || '',
-          pb10k: data.pb10k || '',
-          pbHalfMarathon: data.pbHalfMarathon || '',
-          pbMarathon: data.pbMarathon || '',
-          currentGoal: data.currentGoal || '',
-          targetRace: data.targetRace || '',
-          targetDate: data.targetDate || '',
-          targetTime: data.targetTime || '',
-          injuries: data.injuries || '',
-          healthNotes: data.healthNotes || '',
-          preferredTerrain: data.preferredTerrain || '',
-          availableDays: data.availableDays || '',
-          maxTimePerSession: data.maxTimePerSession?.toString() || '',
-        });
+        if (data) {
+          setFormData({
+            name: data.name || '',
+            age: data.age?.toString() || '',
+            weight: data.weight?.toString() || '',
+            height: data.height?.toString() || '',
+            yearsRunning: data.yearsRunning?.toString() || '',
+            weeklyKm: data.weeklyKm?.toString() || '',
+            pb5k: data.pb5k || '',
+            pb10k: data.pb10k || '',
+            pbHalfMarathon: data.pbHalfMarathon || '',
+            pbMarathon: data.pbMarathon || '',
+            currentGoal: data.currentGoal || '',
+            targetRace: data.targetRace || '',
+            targetDate: data.targetDate || '',
+            targetTime: data.targetTime || '',
+            injuries: data.injuries || '',
+            healthNotes: data.healthNotes || '',
+            preferredTerrain: data.preferredTerrain || '',
+            availableDays: data.availableDays || '',
+            maxTimePerSession: data.maxTimePerSession?.toString() || '',
+          });
+        }
       }
     } catch (error) {
       console.error('Error loading profile:', error);
