@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import {
   LineChart,
   Line,
@@ -14,6 +15,16 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
+
+// Cargar mapa dinámicamente para evitar problemas con SSR
+const ActivityMap = dynamic(() => import('@/components/ActivityMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-80 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+    </div>
+  ),
+});
 
 interface StreamData {
   time?: { data: number[] };
@@ -356,6 +367,20 @@ export default function ActivityPage() {
             )}
           </div>
         </div>
+
+        {/* Map */}
+        {activity.mapPolyline && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Ruta</h2>
+            <ActivityMap
+              encodedPolyline={activity.mapPolyline}
+              startLat={activity.startLat}
+              startLng={activity.startLng}
+              endLat={activity.endLat}
+              endLng={activity.endLng}
+            />
+          </div>
+        )}
 
         {/* Tabs */}
         {(isStravaActivity || hasSplits || hasLaps || hasSegments) && (

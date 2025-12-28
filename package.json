@@ -13,12 +13,16 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@mapbox/polyline": "^1.2.1",
     "@neondatabase/serverless": "^1.0.2",
+    "@types/leaflet": "^1.9.21",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
+    "leaflet": "^1.9.4",
     "next": "16.1.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-leaflet": "^5.0.0",
     "react-markdown": "^10.1.0",
     "recharts": "^3.6.0",
     "rehype-highlight": "^7.0.2",
