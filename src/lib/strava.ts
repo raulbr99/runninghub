@@ -23,29 +23,111 @@ export interface StravaTokenResponse {
 export interface StravaActivity {
   id: number;
   name: string;
+  description?: string;
   distance: number; // metros
   moving_time: number; // segundos
   elapsed_time: number; // segundos
   total_elevation_gain: number;
+  elev_high?: number;
+  elev_low?: number;
   type: string;
   sport_type: string;
+  workout_type?: number;
   start_date: string;
   start_date_local: string;
+  timezone?: string;
+  // Velocidad
   average_speed: number; // m/s
   max_speed: number;
+  // Frecuencia cardíaca
   average_heartrate?: number;
   max_heartrate?: number;
-  suffer_score?: number;
-  workout_type?: number;
+  has_heartrate?: boolean;
+  // Cadencia
   average_cadence?: number;
+  // Potencia
   average_watts?: number;
   max_watts?: number;
+  weighted_average_watts?: number;
+  device_watts?: boolean;
+  kilojoules?: number;
+  // Energía
   calories?: number;
+  suffer_score?: number;
+  // Temperatura
+  average_temp?: number;
+  // Ubicación
   start_latlng?: [number, number];
   end_latlng?: [number, number];
   map?: {
     summary_polyline?: string;
+    polyline?: string;
   };
+  // Equipamiento
+  gear_id?: string;
+  gear?: {
+    id: string;
+    name: string;
+    primary: boolean;
+    distance: number;
+  };
+  // Dispositivo
+  device_name?: string;
+  // Social
+  kudos_count?: number;
+  comment_count?: number;
+  achievement_count?: number;
+  pr_count?: number;
+  // Datos detallados
+  splits_metric?: Array<{
+    distance: number;
+    elapsed_time: number;
+    elevation_difference: number;
+    moving_time: number;
+    split: number;
+    average_speed: number;
+    pace_zone: number;
+  }>;
+  laps?: Array<{
+    name: string;
+    elapsed_time: number;
+    moving_time: number;
+    distance: number;
+    start_index: number;
+    end_index: number;
+    total_elevation_gain: number;
+    average_speed: number;
+    max_speed: number;
+    average_cadence?: number;
+    average_watts?: number;
+    average_heartrate?: number;
+    max_heartrate?: number;
+    lap_index: number;
+  }>;
+  segment_efforts?: Array<{
+    name: string;
+    elapsed_time: number;
+    moving_time: number;
+    distance: number;
+    average_cadence?: number;
+    average_watts?: number;
+    average_heartrate?: number;
+    max_heartrate?: number;
+    segment: {
+      name: string;
+      distance: number;
+      average_grade: number;
+      maximum_grade: number;
+      elevation_high: number;
+      elevation_low: number;
+      city: string;
+      state: string;
+      country: string;
+      climb_category: number;
+    };
+    kom_rank?: number;
+    pr_rank?: number;
+  }>;
 }
 
 export function getAuthUrl(redirectUri: string): string {
@@ -117,6 +199,64 @@ export async function getActivities(
   if (!response.ok) {
     const error = await response.text();
     throw new Error(`Failed to get activities: ${error}`);
+  }
+
+  return response.json();
+}
+
+export async function getActivityDetails(
+  accessToken: string,
+  activityId: number
+): Promise<StravaActivity> {
+  const response = await fetch(`${STRAVA_API_BASE}/activities/${activityId}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to get activity details: ${error}`);
+  }
+
+  return response.json();
+}
+
+export interface StravaStream {
+  type: string;
+  data: number[] | [number, number][];
+  series_type: string;
+  original_size: number;
+  resolution: string;
+}
+
+export interface StravaStreams {
+  time?: { data: number[] };
+  distance?: { data: number[] };
+  latlng?: { data: [number, number][] };
+  altitude?: { data: number[] };
+  heartrate?: { data: number[] };
+  cadence?: { data: number[] };
+  watts?: { data: number[] };
+  velocity_smooth?: { data: number[] };
+  grade_smooth?: { data: number[] };
+  temp?: { data: number[] };
+}
+
+export async function getActivityStreams(
+  accessToken: string,
+  activityId: number,
+  streamTypes: string[] = ['time', 'distance', 'altitude', 'heartrate', 'cadence', 'watts', 'velocity_smooth', 'grade_smooth', 'temp']
+): Promise<StravaStreams> {
+  const keys = streamTypes.join(',');
+  const response = await fetch(
+    `${STRAVA_API_BASE}/activities/${activityId}/streams?keys=${keys}&key_by_type=true`,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to get activity streams: ${error}`);
   }
 
   return response.json();

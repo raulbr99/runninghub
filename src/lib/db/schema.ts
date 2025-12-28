@@ -71,25 +71,103 @@ export const runningEvents = pgTable('running_events', {
   completed: integer('completed').default(0),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  // Campos adicionales de Strava
+  // Campos de Strava - Básicos
   stravaId: text('strava_id'),
   movingTime: integer('moving_time'), // segundos
   elapsedTime: integer('elapsed_time'), // segundos
-  elevationGain: real('elevation_gain'), // metros
-  maxSpeed: real('max_speed'), // m/s
+  sportType: text('sport_type'),
+  workoutType: integer('workout_type'),
+  description: text('description'),
+  // Velocidad y ritmo
   averageSpeed: real('average_speed'), // m/s
+  maxSpeed: real('max_speed'), // m/s
+  // Elevación
+  elevationGain: real('elevation_gain'), // metros
+  elevHigh: real('elev_high'), // metros
+  elevLow: real('elev_low'), // metros
+  // Frecuencia cardíaca
   maxHeartRate: integer('max_heart_rate'),
+  hasHeartrate: integer('has_heartrate'),
+  // Cadencia
   averageCadence: real('average_cadence'),
+  // Potencia
   averageWatts: real('average_watts'),
   maxWatts: integer('max_watts'),
+  weightedAverageWatts: real('weighted_average_watts'), // NP
+  deviceWatts: integer('device_watts'),
+  kilojoules: real('kilojoules'),
+  // Energía y esfuerzo
   calories: integer('calories'),
   sufferScore: integer('suffer_score'),
+  // Temperatura
+  averageTemp: real('average_temp'),
+  // Ubicación y mapa
   startLat: real('start_lat'),
   startLng: real('start_lng'),
   endLat: real('end_lat'),
   endLng: real('end_lng'),
   mapPolyline: text('map_polyline'),
-  sportType: text('sport_type'),
+  timezone: text('timezone'),
+  // Equipamiento
+  gearId: text('gear_id'),
+  gearName: text('gear_name'),
+  // Dispositivo
+  deviceName: text('device_name'),
+  // Social
+  kudosCount: integer('kudos_count'),
+  commentCount: integer('comment_count'),
+  achievementCount: integer('achievement_count'),
+  prCount: integer('pr_count'),
+  // Datos detallados (JSON)
+  splitsMetric: jsonb('splits_metric').$type<Array<{
+    distance: number;
+    elapsed_time: number;
+    elevation_difference: number;
+    moving_time: number;
+    split: number;
+    average_speed: number;
+    pace_zone: number;
+  }>>(),
+  laps: jsonb('laps').$type<Array<{
+    name: string;
+    elapsed_time: number;
+    moving_time: number;
+    distance: number;
+    start_index: number;
+    end_index: number;
+    total_elevation_gain: number;
+    average_speed: number;
+    max_speed: number;
+    average_cadence?: number;
+    average_watts?: number;
+    average_heartrate?: number;
+    max_heartrate?: number;
+    lap_index: number;
+  }>>(),
+  segmentEfforts: jsonb('segment_efforts').$type<Array<{
+    name: string;
+    elapsed_time: number;
+    moving_time: number;
+    distance: number;
+    average_cadence?: number;
+    average_watts?: number;
+    average_heartrate?: number;
+    max_heartrate?: number;
+    segment: {
+      name: string;
+      distance: number;
+      average_grade: number;
+      maximum_grade: number;
+      elevation_high: number;
+      elevation_low: number;
+      city: string;
+      state: string;
+      country: string;
+      climb_category: number;
+    };
+    kom_rank?: number;
+    pr_rank?: number;
+  }>>(),
 });
 
 // Registro de peso

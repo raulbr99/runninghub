@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { stravaTokens, runningEvents } from '@/lib/db/schema';
-import { getActivities, refreshAccessToken, mapStravaActivityType, formatPace } from '@/lib/strava';
-import { eq, or, like } from 'drizzle-orm';
+import { getActivities, getActivityDetails, refreshAccessToken, mapStravaActivityType, formatPace } from '@/lib/strava';
+import { eq, or, like, isNotNull } from 'drizzle-orm';
 
 // POST: Eliminar actividades de Strava y volver a sincronizar con todos los datos
 export async function POST() {
@@ -37,10 +37,10 @@ export async function POST() {
     }
 
     // Eliminar todas las actividades de Strava (por stravaId o por notes con strava:xxx)
-    const deleted = await db
+    await db
       .delete(runningEvents)
       .where(or(
-        like(runningEvents.stravaId, '%'),
+        isNotNull(runningEvents.stravaId),
         like(runningEvents.notes, 'strava:%')
       ));
 
@@ -50,54 +50,97 @@ export async function POST() {
 
     let imported = 0;
 
-    for (const activity of activities) {
-      const stravaId = activity.id.toString();
-      const date = activity.start_date_local.split('T')[0];
-      const time = activity.start_date_local.split('T')[1]?.substring(0, 5) || null;
-      const distanceKm = Math.round((activity.distance / 1000) * 100) / 100;
-      const durationMin = Math.round(activity.moving_time / 60);
-      const pace = formatPace(activity.average_speed);
-      const eventType = mapStravaActivityType(activity);
+    for (const activitySummary of activities) {
+      try {
+        // Obtener detalles completos de cada actividad
+        const activity = await getActivityDetails(token.accessToken, activitySummary.id);
 
-      await db.insert(runningEvents).values({
-        date,
-        time,
-        category: 'running',
-        type: eventType,
-        title: activity.name,
-        distance: distanceKm,
-        duration: durationMin,
-        pace,
-        heartRate: activity.average_heartrate ? Math.round(activity.average_heartrate) : null,
-        completed: 1,
-        stravaId,
-        movingTime: activity.moving_time,
-        elapsedTime: activity.elapsed_time,
-        elevationGain: activity.total_elevation_gain,
-        averageSpeed: activity.average_speed,
-        maxSpeed: activity.max_speed,
-        maxHeartRate: activity.max_heartrate || null,
-        averageCadence: activity.average_cadence || null,
-        averageWatts: activity.average_watts || null,
-        maxWatts: activity.max_watts || null,
-        calories: activity.calories || null,
-        sufferScore: activity.suffer_score || null,
-        startLat: activity.start_latlng?.[0] || null,
-        startLng: activity.start_latlng?.[1] || null,
-        endLat: activity.end_latlng?.[0] || null,
-        endLng: activity.end_latlng?.[1] || null,
-        mapPolyline: activity.map?.summary_polyline || null,
-        sportType: activity.sport_type,
-      });
+        const stravaId = activity.id.toString();
+        const date = activity.start_date_local.split('T')[0];
+        const time = activity.start_date_local.split('T')[1]?.substring(0, 5) || null;
+        const distanceKm = Math.round((activity.distance / 1000) * 100) / 100;
+        const durationMin = Math.round(activity.moving_time / 60);
+        const pace = formatPace(activity.average_speed);
+        const eventType = mapStravaActivityType(activity);
 
-      imported++;
+        await db.insert(runningEvents).values({
+          date,
+          time,
+          category: 'running',
+          type: eventType,
+          title: activity.name,
+          distance: distanceKm,
+          duration: durationMin,
+          pace,
+          heartRate: activity.average_heartrate ? Math.round(activity.average_heartrate) : null,
+          completed: 1,
+          // Campos básicos de Strava
+          stravaId,
+          description: activity.description || null,
+          movingTime: activity.moving_time,
+          elapsedTime: activity.elapsed_time,
+          sportType: activity.sport_type,
+          workoutType: activity.workout_type || null,
+          // Velocidad
+          averageSpeed: activity.average_speed,
+          maxSpeed: activity.max_speed,
+          // Elevación
+          elevationGain: activity.total_elevation_gain,
+          elevHigh: activity.elev_high || null,
+          elevLow: activity.elev_low || null,
+          // Frecuencia cardíaca
+          maxHeartRate: activity.max_heartrate || null,
+          hasHeartrate: activity.has_heartrate ? 1 : 0,
+          // Cadencia
+          averageCadence: activity.average_cadence || null,
+          // Potencia
+          averageWatts: activity.average_watts || null,
+          maxWatts: activity.max_watts || null,
+          weightedAverageWatts: activity.weighted_average_watts || null,
+          deviceWatts: activity.device_watts ? 1 : 0,
+          kilojoules: activity.kilojoules || null,
+          // Energía
+          calories: activity.calories || null,
+          sufferScore: activity.suffer_score || null,
+          // Temperatura
+          averageTemp: activity.average_temp || null,
+          // Ubicación
+          startLat: activity.start_latlng?.[0] || null,
+          startLng: activity.start_latlng?.[1] || null,
+          endLat: activity.end_latlng?.[0] || null,
+          endLng: activity.end_latlng?.[1] || null,
+          mapPolyline: activity.map?.summary_polyline || null,
+          timezone: activity.timezone || null,
+          // Equipamiento
+          gearId: activity.gear_id || null,
+          gearName: activity.gear?.name || null,
+          // Dispositivo
+          deviceName: activity.device_name || null,
+          // Social
+          kudosCount: activity.kudos_count || 0,
+          commentCount: activity.comment_count || 0,
+          achievementCount: activity.achievement_count || 0,
+          prCount: activity.pr_count || 0,
+          // Datos detallados
+          splitsMetric: activity.splits_metric || null,
+          laps: activity.laps || null,
+          segmentEfforts: activity.segment_efforts || null,
+        });
+
+        imported++;
+
+        // Pequeña pausa para no exceder rate limits de Strava (600 requests/15min)
+        await new Promise(resolve => setTimeout(resolve, 200));
+      } catch (error) {
+        console.error(`Error importing activity ${activitySummary.id}:`, error);
+      }
     }
 
     return NextResponse.json({
       success: true,
-      deleted: deleted.rowCount || 0,
       imported,
-      message: `Eliminadas las actividades antiguas y reimportadas ${imported} actividades con todos los datos`,
+      total: activities.length,
+      message: `Reimportadas ${imported} actividades con todos los datos`,
     });
   } catch (error) {
     console.error('Error resyncing Strava activities:', error);

@@ -495,6 +495,22 @@ export default function CalendarPage() {
                   <span className="text-sm text-gray-700 dark:text-gray-300">Completado</span>
                 </label>
 
+                {/* Link a ver detalles completos */}
+                {selectedEvent && (
+                  <a
+                    href={`/activity/${selectedEvent.id}`}
+                    className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                  >
+                    <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <span className="text-sm font-medium text-green-700 dark:text-green-300">Ver detalles completos</span>
+                    <svg className="w-4 h-4 ml-auto text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </a>
+                )}
+
                 {/* Link a Strava si es una actividad sincronizada */}
                 {(() => {
                   const stravaId = selectedEvent?.stravaId || (selectedEvent?.notes?.startsWith('strava:') ? selectedEvent.notes.replace('strava:', '') : null);
