@@ -116,6 +116,19 @@ export const appSettings = pgTable('app_settings', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// Tokens de Strava
+export const stravaTokens = pgTable('strava_tokens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  athleteId: text('athlete_id').notNull().unique(),
+  accessToken: text('access_token').notNull(),
+  refreshToken: text('refresh_token').notNull(),
+  expiresAt: integer('expires_at').notNull(),
+  athleteName: text('athlete_name'),
+  athleteProfile: text('athlete_profile'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Types para TypeScript
 export type Conversation = typeof conversations.$inferSelect;
 export type NewConversation = typeof conversations.$inferInsert;
@@ -133,3 +146,5 @@ export type NutritionGoals = typeof nutritionGoals.$inferSelect;
 export type NewNutritionGoals = typeof nutritionGoals.$inferInsert;
 export type AppSettings = typeof appSettings.$inferSelect;
 export type NewAppSettings = typeof appSettings.$inferInsert;
+export type StravaToken = typeof stravaTokens.$inferSelect;
+export type NewStravaToken = typeof stravaTokens.$inferInsert;

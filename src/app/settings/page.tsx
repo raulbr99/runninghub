@@ -1,12 +1,22 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 interface Settings {
   id: string;
   selectedModel: string;
   selectedModels: string[];
   updatedAt: string;
+}
+
+interface StravaStatus {
+  connected: boolean;
+  athlete?: {
+    id: string;
+    name: string;
+    profile: string;
+  };
 }
 
 interface OpenRouterModel {
@@ -25,7 +35,8 @@ interface OpenRouterModel {
   };
 }
 
-export default function SettingsPage() {
+function SettingsContent() {
+  const searchParams = useSearchParams();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [allModels, setAllModels] = useState<OpenRouterModel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,10 +48,26 @@ export default function SettingsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFreeOnly, setShowFreeOnly] = useState(false);
 
+  // Strava
+  const [stravaStatus, setStravaStatus] = useState<StravaStatus | null>(null);
+  const [stravaLoading, setStravaLoading] = useState(true);
+  const [stravaSyncing, setStravaSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<{ imported: number; skipped: number } | null>(null);
+
   useEffect(() => {
     loadSettings();
     loadModels();
-  }, []);
+    loadStravaStatus();
+
+    // Verificar resultado de OAuth
+    const stravaResult = searchParams.get('strava');
+    if (stravaResult === 'success') {
+      setMessage({ type: 'success', text: 'Strava conectado correctamente' });
+      loadStravaStatus();
+    } else if (stravaResult === 'error') {
+      setMessage({ type: 'error', text: 'Error al conectar con Strava' });
+    }
+  }, [searchParams]);
 
   const loadSettings = async () => {
     try {
@@ -73,6 +100,59 @@ export default function SettingsPage() {
       console.error('Error loading models:', error);
     } finally {
       setLoadingModels(false);
+    }
+  };
+
+  const loadStravaStatus = async () => {
+    try {
+      const res = await fetch('/api/strava/status');
+      if (res.ok) {
+        const data = await res.json();
+        setStravaStatus(data);
+      }
+    } catch (error) {
+      console.error('Error loading Strava status:', error);
+    } finally {
+      setStravaLoading(false);
+    }
+  };
+
+  const connectStrava = () => {
+    window.location.href = '/api/strava/auth';
+  };
+
+  const disconnectStrava = async () => {
+    if (!confirm('Desconectar tu cuenta de Strava?')) return;
+    try {
+      const res = await fetch('/api/strava/status', { method: 'DELETE' });
+      if (res.ok) {
+        setStravaStatus({ connected: false });
+        setMessage({ type: 'success', text: 'Strava desconectado' });
+        setSyncResult(null);
+      }
+    } catch (error) {
+      console.error('Error disconnecting Strava:', error);
+      setMessage({ type: 'error', text: 'Error al desconectar' });
+    }
+  };
+
+  const syncStrava = async () => {
+    setStravaSyncing(true);
+    setSyncResult(null);
+    try {
+      const res = await fetch('/api/strava/sync', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        setSyncResult({ imported: data.imported, skipped: data.skipped });
+        setMessage({ type: 'success', text: `${data.imported} actividades importadas` });
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Error al sincronizar' });
+      }
+    } catch (error) {
+      console.error('Error syncing Strava:', error);
+      setMessage({ type: 'error', text: 'Error al sincronizar' });
+    } finally {
+      setStravaSyncing(false);
     }
   };
 
@@ -173,6 +253,99 @@ export default function SettingsPage() {
           {message.text}
         </div>
       )}
+
+      {/* Strava */}
+      <div className="mb-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="#FC4C02">
+              <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/>
+            </svg>
+            Strava
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Sincroniza tus entrenamientos automaticamente
+          </p>
+        </div>
+        <div className="p-4">
+          {stravaLoading ? (
+            <div className="flex justify-center py-4">
+              <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : stravaStatus?.connected ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
+                {stravaStatus.athlete?.profile && (
+                  <img
+                    src={stravaStatus.athlete.profile}
+                    alt="Profile"
+                    className="w-12 h-12 rounded-full"
+                  />
+                )}
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {stravaStatus.athlete?.name || 'Atleta'}
+                  </p>
+                  <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    Conectado
+                  </p>
+                </div>
+                <button
+                  onClick={disconnectStrava}
+                  className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                >
+                  Desconectar
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={syncStrava}
+                  disabled={stravaSyncing}
+                  className="flex-1 px-4 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-colors"
+                >
+                  {stravaSyncing ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Sincronizando...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Sincronizar actividades
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {syncResult && (
+                <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm text-gray-600 dark:text-gray-300">
+                  <span className="font-medium">{syncResult.imported}</span> importadas,{' '}
+                  <span className="font-medium">{syncResult.skipped}</span> ya existian
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-gray-500 dark:text-gray-400 mb-4">
+                Conecta tu cuenta de Strava para importar tus entrenamientos automaticamente
+              </p>
+              <button
+                onClick={connectStrava}
+                className="px-6 py-3 bg-[#FC4C02] hover:bg-[#e04400] text-white rounded-xl font-medium flex items-center gap-2 mx-auto transition-colors"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/>
+                </svg>
+                Conectar con Strava
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Modelos seleccionados */}
       {selectedModels.length > 0 && (
@@ -371,5 +544,17 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <SettingsContent />
+    </Suspense>
   );
 }
