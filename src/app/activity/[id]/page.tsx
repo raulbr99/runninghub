@@ -187,14 +187,29 @@ function getClimbCategory(category: number): string {
   }
 }
 
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export default function ActivityPage() {
   const params = useParams();
   const router = useRouter();
   const [activity, setActivity] = useState<Activity | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'charts' | 'splits' | 'laps' | 'segments'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'analysis' | 'charts' | 'splits' | 'laps' | 'segments'>('overview');
   const [streams, setStreams] = useState<StreamData | null>(null);
   const [loadingStreams, setLoadingStreams] = useState(false);
+
+  // AI Summary state
+  const [summary, setSummary] = useState<string | null>(null);
+  const [loadingSummary, setLoadingSummary] = useState(false);
+
+  // Chat state
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
 
   useEffect(() => {
     async function loadActivity() {
@@ -250,6 +265,57 @@ export default function ActivityPage() {
     grade: streams.grade_smooth?.data?.[i],
     temp: streams.temp?.data?.[i],
   })) || [];
+
+  // Cargar resumen de IA cuando se selecciona la pestaña de análisis
+  useEffect(() => {
+    async function loadSummary() {
+      setLoadingSummary(true);
+      try {
+        const res = await fetch(`/api/activities/${params.id}/summary`);
+        if (res.ok) {
+          const data = await res.json();
+          setSummary(data.summary);
+        }
+      } catch (error) {
+        console.error('Error loading summary:', error);
+      } finally {
+        setLoadingSummary(false);
+      }
+    }
+
+    if (activeTab === 'analysis' && !summary && activity) {
+      loadSummary();
+    }
+  }, [activeTab, activity, params.id, summary]);
+
+  // Función para enviar mensaje al chat
+  async function sendChatMessage() {
+    if (!chatInput.trim() || sendingMessage) return;
+
+    const userMessage: ChatMessage = { role: 'user', content: chatInput };
+    setChatMessages(prev => [...prev, userMessage]);
+    setChatInput('');
+    setSendingMessage(true);
+
+    try {
+      const res = await fetch(`/api/activities/${params.id}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [...chatMessages, userMessage],
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setChatMessages(prev => [...prev, { role: 'assistant', content: data.content }]);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+    } finally {
+      setSendingMessage(false);
+    }
+  }
 
   // Reducir datos para mejor rendimiento (tomar cada N puntos)
   const sampleRate = Math.max(1, Math.floor(chartData.length / 500));
@@ -395,6 +461,16 @@ export default function ActivityPage() {
             >
               Resumen
             </button>
+            <button
+              onClick={() => setActiveTab('analysis')}
+              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
+                activeTab === 'analysis'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300'
+              }`}
+            >
+              Analisis IA
+            </button>
             {isStravaActivity && (
               <button
                 onClick={() => setActiveTab('charts')}
@@ -447,6 +523,53 @@ export default function ActivityPage() {
         )}
 
         {/* Tab Content */}
+        {activeTab === 'analysis' && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Analisis con IA</h2>
+              {summary && (
+                <button
+                  onClick={() => { setSummary(null); }}
+                  className="text-sm text-green-600 hover:text-green-700"
+                >
+                  Regenerar
+                </button>
+              )}
+            </div>
+            {loadingSummary ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+                <span className="ml-3 text-gray-600 dark:text-gray-400">Analizando actividad...</span>
+              </div>
+            ) : summary ? (
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                {summary.split('\n').map((line, i) => {
+                  if (line.startsWith('**') && line.endsWith('**')) {
+                    return <h3 key={i} className="text-lg font-semibold text-gray-900 dark:text-white mt-4 mb-2">{line.replace(/\*\*/g, '')}</h3>;
+                  }
+                  if (line.startsWith('- ')) {
+                    return <li key={i} className="text-gray-700 dark:text-gray-300 ml-4">{line.substring(2)}</li>;
+                  }
+                  if (line.trim()) {
+                    return <p key={i} className="text-gray-700 dark:text-gray-300 mb-2">{line}</p>;
+                  }
+                  return null;
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-500 dark:text-gray-400 mb-4">Genera un analisis detallado de tu actividad con IA</p>
+                <button
+                  onClick={() => setActiveTab('analysis')}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium"
+                >
+                  Generar Analisis
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === 'overview' && (
           <>
             {/* Detailed Stats Grid */}
@@ -956,6 +1079,129 @@ export default function ActivityPage() {
           </div>
         )}
       </main>
+
+      {/* Chat Button */}
+      <button
+        onClick={() => setChatOpen(true)}
+        className="fixed bottom-6 right-6 w-14 h-14 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 z-40"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+      </button>
+
+      {/* Chat Sidebar */}
+      {chatOpen && (
+        <div className="fixed inset-y-0 right-0 w-full sm:w-96 bg-white dark:bg-gray-800 shadow-2xl z-50 flex flex-col">
+          {/* Header */}
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Chat sobre la actividad</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Pregunta cualquier cosa</p>
+            </div>
+            <button
+              onClick={() => setChatOpen(false)}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {chatMessages.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
+                  Pregunta sobre tu actividad:
+                </p>
+                <div className="space-y-2">
+                  {[
+                    '¿Como fue mi ritmo?',
+                    '¿En que puedo mejorar?',
+                    '¿Que zonas de FC use?',
+                    '¿Como estuvo mi cadencia?',
+                  ].map((suggestion, i) => (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        setChatInput(suggestion);
+                      }}
+                      className="block w-full text-left px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-gray-700 dark:text-gray-300 transition-colors"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {chatMessages.map((msg, i) => (
+              <div
+                key={i}
+                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[85%] px-4 py-2 rounded-2xl ${
+                    msg.role === 'user'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                  }`}
+                >
+                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                </div>
+              </div>
+            ))}
+            {sendingMessage && (
+              <div className="flex justify-start">
+                <div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-2xl">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Input */}
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                sendChatMessage();
+              }}
+              className="flex gap-2"
+            >
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Escribe tu pregunta..."
+                className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+              <button
+                type="submit"
+                disabled={!chatInput.trim() || sendingMessage}
+                className="p-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-full transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay */}
+      {chatOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 z-40 sm:hidden"
+          onClick={() => setChatOpen(false)}
+        />
+      )}
     </div>
   );
 }
