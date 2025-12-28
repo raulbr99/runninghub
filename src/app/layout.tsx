@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
+import ChatPopup from "@/components/ChatPopup";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,6 +41,7 @@ export default function RootLayout({
         <main className="md:ml-64 min-h-screen">
           {children}
         </main>
+        <ChatPopup />
       </body>
     </html>
   );
