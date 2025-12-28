@@ -12,18 +12,7 @@ interface ActivityMapProps {
   endLat?: number;
   endLng?: number;
   highlightedKm?: number | null;
-}
-
-// Calcular distancia entre dos puntos usando formula de Haversine
-function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371000; // Radio de la Tierra en metros
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+  totalDistance?: number; // Distancia total en km de la actividad
 }
 
 export default function ActivityMap({
@@ -33,12 +22,12 @@ export default function ActivityMap({
   endLat,
   endLng,
   highlightedKm,
+  totalDistance,
 }: ActivityMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const highlightLayerRef = useRef<L.Polyline | null>(null);
   const coordinatesRef = useRef<[number, number][]>([]);
-  const distancesRef = useRef<number[]>([]);
 
   // Inicializar mapa
   useEffect(() => {
@@ -49,17 +38,6 @@ export default function ActivityMap({
     coordinatesRef.current = coordinates;
 
     if (coordinates.length === 0) return;
-
-    // Calcular distancias acumuladas
-    const distances: number[] = [0];
-    for (let i = 1; i < coordinates.length; i++) {
-      const d = haversineDistance(
-        coordinates[i - 1][0], coordinates[i - 1][1],
-        coordinates[i][0], coordinates[i][1]
-      );
-      distances.push(distances[i - 1] + d);
-    }
-    distancesRef.current = distances;
 
     // Crear mapa
     const map = L.map(mapRef.current, {
@@ -123,41 +101,27 @@ export default function ActivityMap({
     }
 
     if (highlightedKm === null || highlightedKm === undefined) return;
+    if (!totalDistance || totalDistance <= 0) return;
 
     const coordinates = coordinatesRef.current;
-    const distances = distancesRef.current;
-    if (coordinates.length === 0 || distances.length === 0) return;
+    if (coordinates.length === 0) return;
+
+    const totalPoints = coordinates.length;
+    const totalDistanceMeters = totalDistance * 1000;
 
     // km 1 = 0-1000m, km 2 = 1000-2000m, etc.
     const startDist = (highlightedKm - 1) * 1000;
-    const endDist = highlightedKm * 1000;
+    const endDist = Math.min(highlightedKm * 1000, totalDistanceMeters);
 
-    // Encontrar el indice del primer punto en o despues de startDist
-    let startIdx = 0;
-    for (let i = 0; i < distances.length; i++) {
-      if (distances[i] >= startDist) {
-        startIdx = i;
-        break;
-      }
-    }
-
-    // Encontrar el indice del ultimo punto en o antes de endDist
-    let endIdx = distances.length - 1;
-    for (let i = startIdx; i < distances.length; i++) {
-      if (distances[i] > endDist) {
-        endIdx = i; // Incluir el primer punto despues para continuidad
-        break;
-      }
-      endIdx = i;
-    }
-
-    // Para km 1, asegurar que empezamos desde el inicio
-    if (highlightedKm === 1) {
-      startIdx = 0;
-    }
+    // Calcular indices basados en proporcion de la distancia total
+    const startIdx = Math.floor((startDist / totalDistanceMeters) * totalPoints);
+    const endIdx = Math.min(
+      Math.ceil((endDist / totalDistanceMeters) * totalPoints),
+      totalPoints - 1
+    );
 
     // Extraer los puntos del segmento
-    if (endIdx >= startIdx) {
+    if (endIdx > startIdx) {
       const segmentPoints = coordinates.slice(startIdx, endIdx + 1);
 
       if (segmentPoints.length > 1) {
@@ -168,7 +132,7 @@ export default function ActivityMap({
         }).addTo(map);
       }
     }
-  }, [highlightedKm]);
+  }, [highlightedKm, totalDistance]);
 
   return (
     <div

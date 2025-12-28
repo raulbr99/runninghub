@@ -577,8 +577,9 @@ export default function ActivityPage() {
                     startLat={activity.startLat}
                     startLng={activity.startLng}
                     endLat={activity.endLat}
-                    highlightedKm={hoveredKm}
                     endLng={activity.endLng}
+                    highlightedKm={hoveredKm}
+                    totalDistance={activity.distance}
                   />
                 </div>
               </div>
