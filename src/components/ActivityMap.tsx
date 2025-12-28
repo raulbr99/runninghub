@@ -41,7 +41,6 @@ export default function ActivityMap({
   const highlightLayerRef = useRef<L.Polyline | null>(null);
   const coordinatesRef = useRef<[number, number][]>([]);
   const distancesRef = useRef<number[]>([]);
-  const offsetRef = useRef<number>(0);
 
   // Inicializar mapa
   useEffect(() => {
@@ -63,18 +62,6 @@ export default function ActivityMap({
       distances.push(distances[i - 1] + d);
     }
     distancesRef.current = distances;
-
-    // Calcular offset: diferencia entre distancia del polyline y distancia de Strava
-    // Strava recorta el inicio y fin, asumimos que el recorte es principalmente al inicio
-    const polylineDistance = distances[distances.length - 1];
-    const stravaDistance = (totalDistance || 0) * 1000;
-
-    if (stravaDistance > 0 && polylineDistance > stravaDistance) {
-      // Hay diferencia, calcular offset (asumimos que Strava empieza despues)
-      offsetRef.current = (polylineDistance - stravaDistance) / 2;
-    } else {
-      offsetRef.current = 0;
-    }
 
     // Crear mapa
     const map = L.map(mapRef.current, {
@@ -113,9 +100,10 @@ export default function ActivityMap({
       iconAnchor: [8, 8],
     });
 
-    // Usar coordenadas del polyline o las proporcionadas
-    const start = startLat && startLng ? [startLat, startLng] : coordinates[0];
-    const end = endLat && endLng ? [endLat, endLng] : coordinates[coordinates.length - 1];
+    // Usar siempre los puntos del polyline para los marcadores
+    // (las coordenadas de Strava pueden ser del GPS raw antes del recorte)
+    const start = coordinates[0];
+    const end = coordinates[coordinates.length - 1];
 
     L.marker(start as [number, number], { icon: startIcon }).addTo(map).bindPopup('Inicio');
     L.marker(end as [number, number], { icon: endIcon }).addTo(map).bindPopup('Fin');
@@ -138,17 +126,23 @@ export default function ActivityMap({
     }
 
     if (highlightedKm === null || highlightedKm === undefined) return;
+    if (!totalDistance || totalDistance <= 0) return;
 
     const coordinates = coordinatesRef.current;
     const distances = distancesRef.current;
-    const offset = offsetRef.current;
 
     if (coordinates.length === 0 || distances.length === 0) return;
 
-    // km 1 = 0-1000m, km 2 = 1000-2000m, etc.
-    // Añadir offset para compensar el recorte de Strava
-    const startDist = offset + (highlightedKm - 1) * 1000;
-    const endDist = offset + highlightedKm * 1000;
+    const polylineDistance = distances[distances.length - 1];
+    const stravaDistanceMeters = totalDistance * 1000;
+
+    // Factor de escala: polyline puede tener distancia ligeramente diferente a Strava
+    const scale = polylineDistance / stravaDistanceMeters;
+
+    // km 1 = 0-1000m, km 2 = 1000-2000m, etc. (en terminos de Strava)
+    // Escalar a distancia del polyline
+    const startDist = (highlightedKm - 1) * 1000 * scale;
+    const endDist = highlightedKm * 1000 * scale;
 
     // Encontrar indices
     let startIdx = 0;
@@ -180,7 +174,7 @@ export default function ActivityMap({
         }).addTo(map);
       }
     }
-  }, [highlightedKm]);
+  }, [highlightedKm, totalDistance]);
 
   return (
     <div
