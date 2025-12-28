@@ -192,6 +192,10 @@ interface ChatMessage {
   content: string;
 }
 
+interface Settings {
+  selectedModels: string[];
+}
+
 export default function ActivityPage() {
   const params = useParams();
   const router = useRouter();
@@ -210,6 +214,8 @@ export default function ActivityPage() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [chatModel, setChatModel] = useState<string>('openai/gpt-4o-mini');
 
   useEffect(() => {
     async function loadActivity() {
@@ -229,6 +235,25 @@ export default function ActivityPage() {
       loadActivity();
     }
   }, [params.id]);
+
+  // Cargar modelos disponibles desde settings
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data: Settings = await res.json();
+          if (data.selectedModels && data.selectedModels.length > 0) {
+            setAvailableModels(data.selectedModels);
+            setChatModel(data.selectedModels[0]);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      }
+    }
+    loadSettings();
+  }, []);
 
   // Cargar streams cuando se selecciona la pestaña de gráficas
   useEffect(() => {
@@ -303,6 +328,7 @@ export default function ActivityPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [...chatMessages, userMessage],
+          model: chatModel,
         }),
       });
 
@@ -1094,19 +1120,35 @@ export default function ActivityPage() {
       {chatOpen && (
         <div className="fixed inset-y-0 right-0 w-full sm:w-96 bg-white dark:bg-gray-800 shadow-2xl z-50 flex flex-col">
           {/* Header */}
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <div>
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between mb-2">
               <h3 className="font-semibold text-gray-900 dark:text-white">Chat sobre la actividad</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Pregunta cualquier cosa</p>
+              <button
+                onClick={() => setChatOpen(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
-            <button
-              onClick={() => setChatOpen(false)}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            {availableModels.length > 1 ? (
+              <select
+                value={chatModel}
+                onChange={(e) => setChatModel(e.target.value)}
+                className="w-full px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              >
+                {availableModels.map((model) => (
+                  <option key={model} value={model}>
+                    {model.split('/').pop()}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {chatModel.split('/').pop()}
+              </p>
+            )}
           </div>
 
           {/* Messages */}
