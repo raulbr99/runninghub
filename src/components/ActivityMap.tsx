@@ -128,41 +128,45 @@ export default function ActivityMap({
     const distances = distancesRef.current;
     if (coordinates.length === 0 || distances.length === 0) return;
 
-    // Encontrar puntos para este km (km 1 = 0-1000m, km 2 = 1000-2000m, etc.)
+    // km 1 = 0-1000m, km 2 = 1000-2000m, etc.
     const startDist = (highlightedKm - 1) * 1000;
     const endDist = highlightedKm * 1000;
 
-    const segmentPoints: [number, number][] = [];
-
-    for (let i = 0; i < coordinates.length; i++) {
-      if (distances[i] >= startDist && distances[i] <= endDist) {
-        segmentPoints.push(coordinates[i]);
+    // Encontrar el indice del primer punto en o despues de startDist
+    let startIdx = 0;
+    for (let i = 0; i < distances.length; i++) {
+      if (distances[i] >= startDist) {
+        startIdx = i;
+        break;
       }
     }
 
-    // Si no hay puntos exactos, interpolar
-    if (segmentPoints.length === 0) {
-      // Encontrar el punto mas cercano al inicio del segmento
-      for (let i = 0; i < distances.length - 1; i++) {
-        if (distances[i] <= startDist && distances[i + 1] >= startDist) {
-          segmentPoints.push(coordinates[i]);
-        }
-        if (distances[i] >= startDist && distances[i] <= endDist) {
-          segmentPoints.push(coordinates[i]);
-        }
-        if (distances[i] <= endDist && distances[i + 1] >= endDist) {
-          segmentPoints.push(coordinates[i + 1]);
-          break;
-        }
+    // Encontrar el indice del ultimo punto en o antes de endDist
+    let endIdx = distances.length - 1;
+    for (let i = startIdx; i < distances.length; i++) {
+      if (distances[i] > endDist) {
+        endIdx = i; // Incluir el primer punto despues para continuidad
+        break;
       }
+      endIdx = i;
     }
 
-    if (segmentPoints.length > 1) {
-      highlightLayerRef.current = L.polyline(segmentPoints, {
-        color: '#F59E0B',
-        weight: 8,
-        opacity: 1,
-      }).addTo(map);
+    // Para km 1, asegurar que empezamos desde el inicio
+    if (highlightedKm === 1) {
+      startIdx = 0;
+    }
+
+    // Extraer los puntos del segmento
+    if (endIdx >= startIdx) {
+      const segmentPoints = coordinates.slice(startIdx, endIdx + 1);
+
+      if (segmentPoints.length > 1) {
+        highlightLayerRef.current = L.polyline(segmentPoints, {
+          color: '#F59E0B',
+          weight: 8,
+          opacity: 1,
+        }).addTo(map);
+      }
     }
   }, [highlightedKm]);
 
