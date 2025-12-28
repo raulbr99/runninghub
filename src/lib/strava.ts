@@ -189,7 +189,7 @@ export function mapStravaActivityType(activity: StravaActivity): string {
     }
 
     if (distanceKm >= 18) return 'long';
-    if (distanceKm <= 6 && paceMinPerKm > 6) return 'recovery';
+    if (paceMinPerKm > 7) return 'recovery';
 
     return 'easy';
   }
