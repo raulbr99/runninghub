@@ -43,12 +43,12 @@ export async function POST() {
     let skipped = 0;
 
     for (const activity of activities) {
-      // Verificar si ya existe un evento con el mismo strava_id en las notas
-      const stravaId = `strava:${activity.id}`;
+      // Verificar si ya existe un evento con el mismo strava_id
+      const stravaId = activity.id.toString();
       const existingEvents = await db
         .select()
         .from(runningEvents)
-        .where(eq(runningEvents.notes, stravaId))
+        .where(eq(runningEvents.stravaId, stravaId))
         .limit(1);
 
       if (existingEvents.length > 0) {
@@ -56,8 +56,9 @@ export async function POST() {
         continue;
       }
 
-      // Crear nuevo evento
+      // Crear nuevo evento con todos los datos de Strava
       const date = activity.start_date_local.split('T')[0];
+      const time = activity.start_date_local.split('T')[1]?.substring(0, 5) || null;
       const distanceKm = Math.round((activity.distance / 1000) * 100) / 100;
       const durationMin = Math.round(activity.moving_time / 60);
       const pace = formatPace(activity.average_speed);
@@ -65,6 +66,7 @@ export async function POST() {
 
       await db.insert(runningEvents).values({
         date,
+        time,
         category: 'running',
         type: eventType,
         title: activity.name,
@@ -72,8 +74,26 @@ export async function POST() {
         duration: durationMin,
         pace,
         heartRate: activity.average_heartrate ? Math.round(activity.average_heartrate) : null,
-        notes: stravaId,
         completed: 1,
+        // Campos adicionales de Strava
+        stravaId,
+        movingTime: activity.moving_time,
+        elapsedTime: activity.elapsed_time,
+        elevationGain: activity.total_elevation_gain,
+        averageSpeed: activity.average_speed,
+        maxSpeed: activity.max_speed,
+        maxHeartRate: activity.max_heartrate || null,
+        averageCadence: activity.average_cadence || null,
+        averageWatts: activity.average_watts || null,
+        maxWatts: activity.max_watts || null,
+        calories: activity.calories || null,
+        sufferScore: activity.suffer_score || null,
+        startLat: activity.start_latlng?.[0] || null,
+        startLng: activity.start_latlng?.[1] || null,
+        endLat: activity.end_latlng?.[0] || null,
+        endLng: activity.end_latlng?.[1] || null,
+        mapPolyline: activity.map?.summary_polyline || null,
+        sportType: activity.sport_type,
       });
 
       imported++;

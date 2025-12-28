@@ -37,6 +37,15 @@ export interface StravaActivity {
   max_heartrate?: number;
   suffer_score?: number;
   workout_type?: number;
+  average_cadence?: number;
+  average_watts?: number;
+  max_watts?: number;
+  calories?: number;
+  start_latlng?: [number, number];
+  end_latlng?: [number, number];
+  map?: {
+    summary_polyline?: string;
+  };
 }
 
 export function getAuthUrl(redirectUri: string): string {

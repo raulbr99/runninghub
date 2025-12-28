@@ -71,6 +71,25 @@ export const runningEvents = pgTable('running_events', {
   completed: integer('completed').default(0),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  // Campos adicionales de Strava
+  stravaId: text('strava_id'),
+  movingTime: integer('moving_time'), // segundos
+  elapsedTime: integer('elapsed_time'), // segundos
+  elevationGain: real('elevation_gain'), // metros
+  maxSpeed: real('max_speed'), // m/s
+  averageSpeed: real('average_speed'), // m/s
+  maxHeartRate: integer('max_heart_rate'),
+  averageCadence: real('average_cadence'),
+  averageWatts: real('average_watts'),
+  maxWatts: integer('max_watts'),
+  calories: integer('calories'),
+  sufferScore: integer('suffer_score'),
+  startLat: real('start_lat'),
+  startLng: real('start_lng'),
+  endLat: real('end_lat'),
+  endLng: real('end_lng'),
+  mapPolyline: text('map_polyline'),
+  sportType: text('sport_type'),
 });
 
 // Registro de peso

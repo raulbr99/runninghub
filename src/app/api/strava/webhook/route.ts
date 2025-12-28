@@ -91,19 +91,20 @@ export async function POST(request: NextRequest) {
     const activity = await activityRes.json();
 
     // Verificar si ya existe
-    const stravaIdNote = `strava:${activity.id}`;
+    const stravaId = activity.id.toString();
     const existing = await db
       .select()
       .from(runningEvents)
-      .where(eq(runningEvents.notes, stravaIdNote))
+      .where(eq(runningEvents.stravaId, stravaId))
       .limit(1);
 
     if (existing.length > 0) {
       return NextResponse.json({ received: true, skipped: true });
     }
 
-    // Crear evento
+    // Crear evento con todos los datos de Strava
     const date = activity.start_date_local.split('T')[0];
+    const time = activity.start_date_local.split('T')[1]?.substring(0, 5) || null;
     const distanceKm = Math.round((activity.distance / 1000) * 100) / 100;
     const durationMin = Math.round(activity.moving_time / 60);
     const pace = formatPace(activity.average_speed);
@@ -111,6 +112,7 @@ export async function POST(request: NextRequest) {
 
     await db.insert(runningEvents).values({
       date,
+      time,
       category: 'running',
       type: eventType,
       title: activity.name,
@@ -118,8 +120,26 @@ export async function POST(request: NextRequest) {
       duration: durationMin,
       pace,
       heartRate: activity.average_heartrate ? Math.round(activity.average_heartrate) : null,
-      notes: stravaIdNote,
       completed: 1,
+      // Campos adicionales de Strava
+      stravaId,
+      movingTime: activity.moving_time,
+      elapsedTime: activity.elapsed_time,
+      elevationGain: activity.total_elevation_gain,
+      averageSpeed: activity.average_speed,
+      maxSpeed: activity.max_speed,
+      maxHeartRate: activity.max_heartrate || null,
+      averageCadence: activity.average_cadence || null,
+      averageWatts: activity.average_watts || null,
+      maxWatts: activity.max_watts || null,
+      calories: activity.calories || null,
+      sufferScore: activity.suffer_score || null,
+      startLat: activity.start_latlng?.[0] || null,
+      startLng: activity.start_latlng?.[1] || null,
+      endLat: activity.end_latlng?.[0] || null,
+      endLng: activity.end_latlng?.[1] || null,
+      mapPolyline: activity.map?.summary_polyline || null,
+      sportType: activity.sport_type,
     });
 
     console.log('Activity imported:', activity.name);
