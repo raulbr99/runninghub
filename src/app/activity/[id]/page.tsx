@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -194,6 +194,69 @@ interface ChatMessage {
 
 interface Settings {
   selectedModels: string[];
+}
+
+// Renderizar markdown simple
+function renderMarkdown(text: string): React.ReactNode[] {
+  const lines = text.split('\n');
+  const elements: React.ReactNode[] = [];
+  let listItems: string[] = [];
+
+  const flushList = () => {
+    if (listItems.length > 0) {
+      elements.push(
+        <ul key={`list-${elements.length}`} className="list-disc list-inside space-y-1 my-2">
+          {listItems.map((item, i) => (
+            <li key={i} className="text-sm">{formatInline(item)}</li>
+          ))}
+        </ul>
+      );
+      listItems = [];
+    }
+  };
+
+  const formatInline = (line: string): React.ReactNode => {
+    // Bold **text**
+    const parts = line.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i}>{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+  };
+
+  lines.forEach((line, i) => {
+    // Headers ###
+    if (line.startsWith('### ')) {
+      flushList();
+      elements.push(
+        <h4 key={i} className="font-semibold text-sm mt-3 mb-1">
+          {formatInline(line.substring(4))}
+        </h4>
+      );
+    }
+    // List items
+    else if (line.startsWith('- ')) {
+      listItems.push(line.substring(2));
+    }
+    // Regular text
+    else if (line.trim()) {
+      flushList();
+      elements.push(
+        <p key={i} className="text-sm mb-1">
+          {formatInline(line)}
+        </p>
+      );
+    }
+    // Empty line
+    else {
+      flushList();
+    }
+  });
+
+  flushList();
+  return elements;
 }
 
 export default function ActivityPage() {
@@ -1190,7 +1253,11 @@ export default function ActivityPage() {
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  {msg.role === 'user' ? (
+                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  ) : (
+                    <div className="prose-sm">{renderMarkdown(msg.content)}</div>
+                  )}
                 </div>
               </div>
             ))}
