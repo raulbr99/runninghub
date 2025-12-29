@@ -396,7 +396,17 @@ export async function POST(request: NextRequest) {
         'HTTP-Referer': 'http://localhost:3000',
         'X-Title': 'RunningHub Coach',
       },
-      body: JSON.stringify({ model, messages, temperature, tools, tool_choice: 'auto', stream: true }),
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature,
+        tools,
+        tool_choice: 'auto',
+        stream: true,
+        max_tokens: 2000,
+        frequency_penalty: 0.5,
+        presence_penalty: 0.3,
+      }),
     });
 
     if (!response.ok) {
@@ -446,6 +456,16 @@ export async function POST(request: NextRequest) {
 
             if (delta?.content) {
               contentBuffer += delta.content;
+
+              // Detectar texto repetitivo (más de 20 caracteres iguales seguidos)
+              const lastChars = contentBuffer.slice(-50);
+              const repeatedPattern = /(.)\1{20,}/.test(lastChars);
+              if (repeatedPattern) {
+                console.warn('Detected repetitive output, stopping stream');
+                reader.releaseLock();
+                return { toolCallId, toolCallName, toolCallArgs, contentBuffer, hasToolCall };
+              }
+
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: delta.content })}\n\n`));
             }
 
@@ -523,7 +543,15 @@ export async function POST(request: NextRequest) {
                   'HTTP-Referer': 'http://localhost:3000',
                   'X-Title': 'RunningHub Coach',
                 },
-                body: JSON.stringify({ model, messages: continueMessages, temperature, stream: true }),
+                body: JSON.stringify({
+                  model,
+                  messages: continueMessages,
+                  temperature,
+                  stream: true,
+                  max_tokens: 2000,
+                  frequency_penalty: 0.5,
+                  presence_penalty: 0.3,
+                }),
               });
 
               if (continueResponse.ok && continueResponse.body) {
