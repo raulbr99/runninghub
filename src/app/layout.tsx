@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
 import ChatPopup from "@/components/ChatPopup";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,6 +18,16 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "RunningHub",
   description: "Tu coach integral de running, salud y nutricion",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "RunningHub",
+  },
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/icon-192.png",
+  },
 };
 
 export const viewport: Viewport = {
@@ -42,6 +53,7 @@ export default function RootLayout({
           {children}
         </main>
         <ChatPopup />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

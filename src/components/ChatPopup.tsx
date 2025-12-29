@@ -278,12 +278,12 @@ export default function ChatPopup() {
 
   return (
     <>
-      {/* Floating button */}
+      {/* Floating button - hidden on mobile when chat is open */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 ${
           isOpen
-            ? 'bg-gray-600 hover:bg-gray-700 rotate-0'
+            ? 'bg-gray-600 hover:bg-gray-700 rotate-0 max-sm:hidden'
             : 'bg-gradient-to-br from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700'
         }`}
       >
@@ -298,13 +298,14 @@ export default function ChatPopup() {
         )}
       </button>
 
-      {/* Chat popup */}
-      <div className={`fixed bottom-24 right-6 z-50 w-[450px] max-w-[calc(100vw-3rem)] transition-all duration-300 ${
-        isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
-      }`}>
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col" style={{ height: '600px' }}>
+      {/* Chat popup - fullscreen on mobile */}
+      <div className={`fixed z-50 transition-all duration-300
+        max-sm:inset-0 max-sm:bottom-0 max-sm:right-0
+        sm:bottom-24 sm:right-6 sm:w-[450px] sm:max-w-[calc(100vw-3rem)]
+        ${isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+        <div className="bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col h-full max-sm:rounded-none sm:rounded-2xl sm:h-[600px]">
           {/* Header */}
-          <div className="p-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-500 to-emerald-600">
+          <div className="p-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-500 to-emerald-600 max-sm:pt-12">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
@@ -315,17 +316,29 @@ export default function ChatPopup() {
                   <p className="text-[10px] text-white/80">En: {context.page}</p>
                 </div>
               </div>
-              {messages.length > 0 && (
+              <div className="flex items-center gap-1">
+                {messages.length > 0 && (
+                  <button
+                    onClick={clearChat}
+                    className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                    title="Limpiar chat"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                )}
+                {/* Close button for mobile */}
                 <button
-                  onClick={clearChat}
-                  className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all"
-                  title="Limpiar chat"
+                  onClick={() => setIsOpen(false)}
+                  className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all sm:hidden"
+                  title="Cerrar"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
-              )}
+              </div>
             </div>
           </div>
 
