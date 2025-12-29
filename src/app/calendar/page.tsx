@@ -5,54 +5,124 @@ import { useState, useEffect } from 'react';
 const DAYS = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-const RUNNING_TYPES = [
-  { id: 'easy', label: 'Rodaje suave', color: 'bg-green-500', icon: '🏃' },
-  { id: 'tempo', label: 'Tempo', color: 'bg-orange-500', icon: '⚡' },
-  { id: 'intervals', label: 'Series', color: 'bg-red-500', icon: '🔥' },
-  { id: 'long', label: 'Tirada larga', color: 'bg-blue-500', icon: '🛤️' },
-  { id: 'rest', label: 'Descanso', color: 'bg-gray-400', icon: '😴' },
-  { id: 'race', label: 'Carrera', color: 'bg-purple-500', icon: '🏆' },
-  { id: 'strength', label: 'Fuerza', color: 'bg-yellow-500', icon: '💪' },
-  { id: 'recovery', label: 'Recuperacion', color: 'bg-teal-500', icon: '🧘' },
-  { id: 'cycling', label: 'Ciclismo', color: 'bg-sky-500', icon: '🚴' },
-  { id: 'walk', label: 'Caminata', color: 'bg-lime-500', icon: '🚶' },
-  { id: 'swim', label: 'Natacion', color: 'bg-cyan-500', icon: '🏊' },
-  { id: 'other', label: 'Otro', color: 'bg-slate-500', icon: '🏅' },
+// Categorias de eventos
+type EventCategory = 'running' | 'strength' | 'cycling' | 'swimming' | 'other_sport' | 'personal' | 'rest';
+
+const CATEGORIES: { id: EventCategory; label: string; icon: string; color: string }[] = [
+  { id: 'running', label: 'Running', icon: '🏃', color: 'bg-green-500' },
+  { id: 'strength', label: 'Fuerza', icon: '💪', color: 'bg-yellow-500' },
+  { id: 'cycling', label: 'Ciclismo', icon: '🚴', color: 'bg-sky-500' },
+  { id: 'swimming', label: 'Natacion', icon: '🏊', color: 'bg-cyan-500' },
+  { id: 'other_sport', label: 'Otro deporte', icon: '🎾', color: 'bg-orange-500' },
+  { id: 'personal', label: 'Personal', icon: '📅', color: 'bg-indigo-500' },
+  { id: 'rest', label: 'Descanso', icon: '😴', color: 'bg-gray-400' },
 ];
 
-const PERSONAL_TYPES = [
-  { id: 'event', label: 'Evento', color: 'bg-indigo-500', icon: '📅' },
-  { id: 'appointment', label: 'Cita', color: 'bg-pink-500', icon: '🗓️' },
-  { id: 'task', label: 'Tarea', color: 'bg-cyan-500', icon: '✅' },
-  { id: 'reminder', label: 'Recordatorio', color: 'bg-amber-500', icon: '🔔' },
-];
+// Tipos por categoria
+const EVENT_TYPES: Record<EventCategory, { id: string; label: string; color: string; icon: string }[]> = {
+  running: [
+    { id: 'easy', label: 'Rodaje', color: 'bg-green-500', icon: '🏃' },
+    { id: 'tempo', label: 'Tempo', color: 'bg-orange-500', icon: '⚡' },
+    { id: 'intervals', label: 'Series', color: 'bg-red-500', icon: '🔥' },
+    { id: 'fartlek', label: 'Fartlek', color: 'bg-pink-500', icon: '🎲' },
+    { id: 'long', label: 'Tirada larga', color: 'bg-blue-500', icon: '🛤️' },
+    { id: 'recovery', label: 'Recuperacion', color: 'bg-teal-500', icon: '🧘' },
+    { id: 'race', label: 'Carrera', color: 'bg-purple-500', icon: '🏆' },
+    { id: 'trail', label: 'Trail', color: 'bg-emerald-600', icon: '⛰️' },
+  ],
+  strength: [
+    { id: 'upper', label: 'Tren superior', color: 'bg-yellow-500', icon: '💪' },
+    { id: 'lower', label: 'Tren inferior', color: 'bg-yellow-600', icon: '🦵' },
+    { id: 'full_body', label: 'Full body', color: 'bg-yellow-500', icon: '🏋️' },
+    { id: 'core', label: 'Core', color: 'bg-yellow-400', icon: '🎯' },
+    { id: 'functional', label: 'Funcional', color: 'bg-amber-500', icon: '⚡' },
+  ],
+  cycling: [
+    { id: 'road', label: 'Carretera', color: 'bg-sky-500', icon: '🚴' },
+    { id: 'mtb', label: 'MTB', color: 'bg-sky-600', icon: '🚵' },
+    { id: 'indoor', label: 'Indoor', color: 'bg-sky-400', icon: '🏠' },
+    { id: 'gravel', label: 'Gravel', color: 'bg-sky-700', icon: '🛤️' },
+  ],
+  swimming: [
+    { id: 'pool', label: 'Piscina', color: 'bg-cyan-500', icon: '🏊' },
+    { id: 'open_water', label: 'Aguas abiertas', color: 'bg-cyan-600', icon: '🌊' },
+  ],
+  other_sport: [
+    { id: 'hiking', label: 'Senderismo', color: 'bg-orange-500', icon: '🥾' },
+    { id: 'yoga', label: 'Yoga', color: 'bg-purple-400', icon: '🧘' },
+    { id: 'stretching', label: 'Estiramientos', color: 'bg-pink-400', icon: '🤸' },
+    { id: 'crossfit', label: 'CrossFit', color: 'bg-red-500', icon: '🏋️' },
+    { id: 'paddle', label: 'Padel', color: 'bg-green-400', icon: '🎾' },
+    { id: 'football', label: 'Futbol', color: 'bg-green-600', icon: '⚽' },
+    { id: 'basketball', label: 'Basket', color: 'bg-orange-600', icon: '🏀' },
+    { id: 'tennis', label: 'Tenis', color: 'bg-lime-500', icon: '🎾' },
+    { id: 'other', label: 'Otro', color: 'bg-slate-500', icon: '🏅' },
+  ],
+  personal: [
+    { id: 'family', label: 'Familiar', color: 'bg-indigo-500', icon: '👨‍👩‍👧' },
+    { id: 'social', label: 'Social', color: 'bg-pink-500', icon: '🎉' },
+    { id: 'work', label: 'Trabajo', color: 'bg-slate-500', icon: '💼' },
+    { id: 'medical', label: 'Medico', color: 'bg-red-400', icon: '🏥' },
+    { id: 'travel', label: 'Viaje', color: 'bg-blue-500', icon: '✈️' },
+    { id: 'birthday', label: 'Cumpleanos', color: 'bg-amber-400', icon: '🎂' },
+    { id: 'other', label: 'Otro', color: 'bg-gray-500', icon: '📌' },
+  ],
+  rest: [
+    { id: 'active_recovery', label: 'Recuperacion activa', color: 'bg-teal-400', icon: '🚶' },
+    { id: 'complete_rest', label: 'Descanso total', color: 'bg-gray-400', icon: '😴' },
+    { id: 'injury', label: 'Lesion', color: 'bg-red-400', icon: '🤕' },
+  ],
+};
+
+interface StrengthExercise {
+  name: string;
+  sets: number;
+  reps: number;
+  weight?: number;
+}
+
+interface EventData {
+  pace?: string;
+  cadence?: number;
+  exercises?: StrengthExercise[];
+  muscleGroups?: string[];
+  avgSpeed?: number;
+  power?: number;
+  laps?: number;
+  poolLength?: number;
+  strokeType?: string;
+  intensity?: 'low' | 'medium' | 'high';
+  location?: string;
+  allDay?: boolean;
+  reason?: string;
+}
 
 interface CalendarEvent {
   id: string;
   date: string;
-  category: 'running' | 'personal';
+  category: EventCategory;
   type: string;
   title: string | null;
   time: string | null;
   distance: number | null;
   duration: number | null;
-  pace: string | null;
   notes: string | null;
   heartRate: number | null;
+  elevationGain: number | null;
+  calories: number | null;
   feeling: number | null;
   completed: number;
+  eventData: EventData | null;
   // Campos de Strava
   stravaId: string | null;
   movingTime: number | null;
   elapsedTime: number | null;
-  elevationGain: number | null;
   maxSpeed: number | null;
   averageSpeed: number | null;
   maxHeartRate: number | null;
   averageCadence: number | null;
   averageWatts: number | null;
   maxWatts: number | null;
-  calories: number | null;
   sufferScore: number | null;
   sportType: string | null;
 }
@@ -67,17 +137,28 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true);
 
   const [formData, setFormData] = useState({
-    category: 'running' as 'running' | 'personal',
+    category: 'running' as EventCategory,
     type: 'easy',
     title: '',
     time: '',
     distance: '',
     duration: '',
-    pace: '',
     notes: '',
     heartRate: '',
+    elevationGain: '',
+    calories: '',
     feeling: 3,
     completed: 0,
+    // Campos especificos
+    pace: '',
+    avgSpeed: '',
+    power: '',
+    laps: '',
+    poolLength: '25',
+    intensity: 'medium' as 'low' | 'medium' | 'high',
+    location: '',
+    reason: '',
+    exercises: [] as StrengthExercise[],
   });
 
   const year = currentDate.getFullYear();
@@ -120,30 +201,51 @@ export default function CalendarPage() {
     return events.filter(e => e.date === dateStr);
   };
 
-  const getEventType = (category: string, type: string) => {
-    if (category === 'personal') return PERSONAL_TYPES.find(t => t.id === type) || PERSONAL_TYPES[0];
-    return RUNNING_TYPES.find(t => t.id === type) || RUNNING_TYPES[0];
+  const getEventType = (category: EventCategory, type: string) => {
+    const types = EVENT_TYPES[category] || EVENT_TYPES.running;
+    return types.find(t => t.id === type) || types[0];
+  };
+
+  const getCategoryInfo = (category: EventCategory) => {
+    return CATEGORIES.find(c => c.id === category) || CATEGORIES[0];
   };
 
   const openModal = (dateStr: string, event?: CalendarEvent) => {
     setSelectedDate(dateStr);
     setSelectedEvent(event || null);
     if (event) {
+      const eventData = event.eventData || {};
       setFormData({
-        category: event.category || 'running',
+        category: (event.category as EventCategory) || 'running',
         type: event.type,
         title: event.title || '',
         time: event.time || '',
         distance: event.distance?.toString() || '',
         duration: event.duration?.toString() || '',
-        pace: event.pace || '',
         notes: event.notes || '',
         heartRate: event.heartRate?.toString() || '',
+        elevationGain: event.elevationGain?.toString() || '',
+        calories: event.calories?.toString() || '',
         feeling: event.feeling || 3,
         completed: event.completed,
+        // Campos especificos de eventData
+        pace: eventData.pace || '',
+        avgSpeed: eventData.avgSpeed?.toString() || '',
+        power: eventData.power?.toString() || '',
+        laps: eventData.laps?.toString() || '',
+        poolLength: eventData.poolLength?.toString() || '25',
+        intensity: eventData.intensity || 'medium',
+        location: eventData.location || '',
+        reason: eventData.reason || '',
+        exercises: eventData.exercises || [],
       });
     } else {
-      setFormData({ category: 'running', type: 'easy', title: '', time: '', distance: '', duration: '', pace: '', notes: '', heartRate: '', feeling: 3, completed: 0 });
+      setFormData({
+        category: 'running', type: 'easy', title: '', time: '', distance: '', duration: '',
+        notes: '', heartRate: '', elevationGain: '', calories: '', feeling: 3, completed: 0,
+        pace: '', avgSpeed: '', power: '', laps: '', poolLength: '25', intensity: 'medium',
+        location: '', reason: '', exercises: [],
+      });
     }
     setShowModal(true);
   };
@@ -156,21 +258,47 @@ export default function CalendarPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = {
+
+    // Campos base
+    const payload: Record<string, unknown> = {
       id: selectedEvent?.id,
       date: selectedDate,
       category: formData.category,
       type: formData.type,
       title: formData.title || null,
       time: formData.time || null,
-      distance: formData.distance ? parseFloat(formData.distance) : null,
       duration: formData.duration ? parseInt(formData.duration) : null,
-      pace: formData.pace || null,
       notes: formData.notes || null,
-      heartRate: formData.heartRate ? parseInt(formData.heartRate) : null,
-      feeling: formData.category === 'running' ? formData.feeling : null,
+      feeling: ['running', 'strength', 'cycling', 'swimming', 'other_sport'].includes(formData.category) ? formData.feeling : null,
       completed: formData.completed,
     };
+
+    // Campos por categoria
+    if (['running', 'cycling', 'swimming', 'other_sport'].includes(formData.category)) {
+      payload.distance = formData.distance ? parseFloat(formData.distance) : null;
+      payload.heartRate = formData.heartRate ? parseInt(formData.heartRate) : null;
+      payload.elevationGain = formData.elevationGain ? parseFloat(formData.elevationGain) : null;
+      payload.calories = formData.calories ? parseInt(formData.calories) : null;
+    }
+
+    // Campos especificos por categoria (van en eventData via API)
+    if (formData.category === 'running') {
+      payload.pace = formData.pace || null;
+    } else if (formData.category === 'cycling') {
+      payload.avgSpeed = formData.avgSpeed ? parseFloat(formData.avgSpeed) : null;
+      payload.power = formData.power ? parseInt(formData.power) : null;
+    } else if (formData.category === 'swimming') {
+      payload.laps = formData.laps ? parseInt(formData.laps) : null;
+      payload.poolLength = formData.poolLength ? parseInt(formData.poolLength) : null;
+    } else if (formData.category === 'other_sport') {
+      payload.intensity = formData.intensity;
+    } else if (formData.category === 'strength') {
+      payload.exercises = formData.exercises.length > 0 ? formData.exercises : null;
+    } else if (formData.category === 'personal') {
+      payload.location = formData.location || null;
+    } else if (formData.category === 'rest') {
+      payload.reason = formData.reason || null;
+    }
 
     try {
       const res = await fetch('/api/running-events', {
@@ -201,15 +329,16 @@ export default function CalendarPage() {
   const remainingDays = 42 - calendarDays.length;
   for (let i = 1; i <= remainingDays; i++) calendarDays.push({ day: i, currentMonth: false, isToday: false });
 
-  const runningEvents = events.filter(e => e.category === 'running' || !e.category);
-  const monthStats = runningEvents.reduce((acc, e) => {
+  // Stats del mes - actividades deportivas
+  const sportEvents = events.filter(e => ['running', 'cycling', 'swimming', 'other_sport', 'strength'].includes(e.category) || !e.category);
+  const monthStats = sportEvents.reduce((acc, e) => {
     if (e.completed) {
       acc.totalDistance += e.distance || 0;
       acc.totalDuration += e.duration || 0;
-      acc.completedRuns++;
+      acc.completedWorkouts++;
     }
     return acc;
-  }, { totalDistance: 0, totalDuration: 0, completedRuns: 0 });
+  }, { totalDistance: 0, totalDuration: 0, completedWorkouts: 0 });
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -232,7 +361,7 @@ export default function CalendarPage() {
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Entrenos</p>
-          <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">{monthStats.completedRuns}</p>
+          <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">{monthStats.completedWorkouts}</p>
         </div>
       </div>
 
@@ -292,10 +421,15 @@ export default function CalendarPage() {
                 </div>
                 <div className="mt-1 space-y-1">
                   {dayEvents.map((event) => {
-                    const eventType = getEventType(event.category || 'running', event.type);
-                    const displayText = event.category === 'personal'
-                      ? event.title || eventType.label
-                      : event.distance ? `${event.distance}km` : eventType.label;
+                    const eventType = getEventType((event.category as EventCategory) || 'running', event.type);
+                    let displayText = eventType.label;
+                    if (event.category === 'personal' || event.category === 'rest') {
+                      displayText = event.title || eventType.label;
+                    } else if (event.distance) {
+                      displayText = `${event.distance}km`;
+                    } else if (event.duration) {
+                      displayText = `${event.duration}min`;
+                    }
                     return (
                       <div
                         key={event.id}
@@ -332,152 +466,215 @@ export default function CalendarPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                  <button type="button" onClick={() => setFormData({ ...formData, category: 'running', type: 'easy' })}
-                    className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${
-                      formData.category === 'running' ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm' : 'text-gray-600 dark:text-gray-400'
-                    }`}>
-                    🏃 Running
-                  </button>
-                  <button type="button" onClick={() => setFormData({ ...formData, category: 'personal', type: 'event' })}
-                    className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${
-                      formData.category === 'personal' ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm' : 'text-gray-600 dark:text-gray-400'
-                    }`}>
-                    📅 Personal
-                  </button>
+                {/* Selector de categoria */}
+                <div className="flex flex-wrap gap-1.5 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                  {CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, category: cat.id, type: EVENT_TYPES[cat.id][0].id })}
+                      className={`flex-1 min-w-[60px] py-1.5 px-2 rounded-md text-xs font-medium transition-all ${
+                        formData.category === cat.id ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm' : 'text-gray-600 dark:text-gray-400'
+                      }`}
+                    >
+                      <span className="text-sm">{cat.icon}</span>
+                      <span className="hidden sm:inline ml-1">{cat.label}</span>
+                    </button>
+                  ))}
                 </div>
 
-                {formData.category === 'running' ? (
+                {/* Selector de tipo segun categoria */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipo</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {EVENT_TYPES[formData.category].map((type) => (
+                      <button key={type.id} type="button" onClick={() => setFormData({ ...formData, type: type.id })}
+                        className={`p-2 rounded-lg text-center text-xs transition-all ${
+                          formData.type === type.id ? `${type.color} text-white` : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                        }`}>
+                        <span className="text-lg">{type.icon}</span>
+                        <p className="mt-1 truncate">{type.label}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Campos especificos por categoria */}
+                {['running', 'cycling', 'swimming', 'other_sport'].includes(formData.category) && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {formData.category === 'swimming' ? 'Distancia (m)' : 'Distancia (km)'}
+                      </label>
+                      <input type="number" step="0.1" value={formData.distance} onChange={(e) => setFormData({ ...formData, distance: e.target.value })}
+                        className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duracion (min)</label>
+                      <input type="number" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                        className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                    </div>
+                  </div>
+                )}
+
+                {formData.category === 'running' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ritmo (min/km)</label>
+                    <input type="text" value={formData.pace} onChange={(e) => setFormData({ ...formData, pace: e.target.value })}
+                      className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="5:30" />
+                  </div>
+                )}
+
+                {formData.category === 'cycling' && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Vel. media (km/h)</label>
+                      <input type="number" step="0.1" value={formData.avgSpeed} onChange={(e) => setFormData({ ...formData, avgSpeed: e.target.value })}
+                        className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Potencia (W)</label>
+                      <input type="number" value={formData.power} onChange={(e) => setFormData({ ...formData, power: e.target.value })}
+                        className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                    </div>
+                  </div>
+                )}
+
+                {formData.category === 'swimming' && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Largos</label>
+                      <input type="number" value={formData.laps} onChange={(e) => setFormData({ ...formData, laps: e.target.value })}
+                        className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Piscina (m)</label>
+                      <select value={formData.poolLength} onChange={(e) => setFormData({ ...formData, poolLength: e.target.value })}
+                        className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <option value="25">25m</option>
+                        <option value="50">50m</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {formData.category === 'strength' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duracion (min)</label>
+                    <input type="number" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                      className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                  </div>
+                )}
+
+                {formData.category === 'other_sport' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Intensidad</label>
+                    <div className="flex gap-2">
+                      {(['low', 'medium', 'high'] as const).map((int) => (
+                        <button key={int} type="button" onClick={() => setFormData({ ...formData, intensity: int })}
+                          className={`flex-1 py-2 rounded-lg text-sm transition-all ${
+                            formData.intensity === int ? 'bg-orange-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                          }`}>
+                          {int === 'low' ? 'Baja' : int === 'medium' ? 'Media' : 'Alta'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {formData.category === 'personal' && (
                   <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipo de entrenamiento</label>
-                      <div className="grid grid-cols-4 gap-2">
-                        {RUNNING_TYPES.map((type) => (
-                          <button key={type.id} type="button" onClick={() => setFormData({ ...formData, type: type.id })}
-                            className={`p-2 rounded-lg text-center text-xs transition-all ${
-                              formData.type === type.id ? `${type.color} text-white` : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                            }`}>
-                            <span className="text-lg">{type.icon}</span>
-                            <p className="mt-1 truncate">{type.label}</p>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Distancia (km)</label>
-                        <input type="number" step="0.1" value={formData.distance} onChange={(e) => setFormData({ ...formData, distance: e.target.value })}
-                          className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="10.5" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duracion (min)</label>
-                        <input type="number" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                          className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="60" />
-                      </div>
-                    </div>
-
-                    {/* Datos adicionales de la actividad */}
-                    {(selectedEvent?.elevationGain || selectedEvent?.calories || selectedEvent?.maxHeartRate || selectedEvent?.averageCadence || selectedEvent?.maxSpeed || selectedEvent?.averageWatts || selectedEvent?.sufferScore || (selectedEvent?.elapsedTime && selectedEvent?.movingTime)) && (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {selectedEvent.elevationGain && (
-                          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                            <p className="text-gray-500 dark:text-gray-400 text-xs">Desnivel</p>
-                            <p className="font-semibold text-gray-900 dark:text-white">{Math.round(selectedEvent.elevationGain)} m</p>
-                          </div>
-                        )}
-                        {selectedEvent.calories && (
-                          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                            <p className="text-gray-500 dark:text-gray-400 text-xs">Calorias</p>
-                            <p className="font-semibold text-gray-900 dark:text-white">{selectedEvent.calories} kcal</p>
-                          </div>
-                        )}
-                        {selectedEvent.heartRate && (
-                          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                            <p className="text-gray-500 dark:text-gray-400 text-xs">FC Media</p>
-                            <p className="font-semibold text-gray-900 dark:text-white">{selectedEvent.heartRate} bpm</p>
-                          </div>
-                        )}
-                        {selectedEvent.maxHeartRate && (
-                          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                            <p className="text-gray-500 dark:text-gray-400 text-xs">FC Max</p>
-                            <p className="font-semibold text-gray-900 dark:text-white">{selectedEvent.maxHeartRate} bpm</p>
-                          </div>
-                        )}
-                        {selectedEvent.averageCadence && (
-                          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                            <p className="text-gray-500 dark:text-gray-400 text-xs">Cadencia</p>
-                            <p className="font-semibold text-gray-900 dark:text-white">{Math.round(selectedEvent.averageCadence * 2)} ppm</p>
-                          </div>
-                        )}
-                        {selectedEvent.maxSpeed && (
-                          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                            <p className="text-gray-500 dark:text-gray-400 text-xs">Vel. Max</p>
-                            <p className="font-semibold text-gray-900 dark:text-white">{(selectedEvent.maxSpeed * 3.6).toFixed(1)} km/h</p>
-                          </div>
-                        )}
-                        {selectedEvent.averageWatts && (
-                          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                            <p className="text-gray-500 dark:text-gray-400 text-xs">Potencia</p>
-                            <p className="font-semibold text-gray-900 dark:text-white">{Math.round(selectedEvent.averageWatts)} W</p>
-                          </div>
-                        )}
-                        {selectedEvent.sufferScore && (
-                          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                            <p className="text-gray-500 dark:text-gray-400 text-xs">Esfuerzo</p>
-                            <p className="font-semibold text-gray-900 dark:text-white">{selectedEvent.sufferScore}</p>
-                          </div>
-                        )}
-                        {selectedEvent.elapsedTime && selectedEvent.movingTime && selectedEvent.elapsedTime > selectedEvent.movingTime && (
-                          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                            <p className="text-gray-500 dark:text-gray-400 text-xs">T. Parado</p>
-                            <p className="font-semibold text-gray-900 dark:text-white">{Math.round((selectedEvent.elapsedTime - selectedEvent.movingTime) / 60)} min</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Como te sentiste?</label>
-                      <div className="flex gap-2">
-                        {[1, 2, 3, 4, 5].map((n) => (
-                          <button key={n} type="button" onClick={() => setFormData({ ...formData, feeling: n })}
-                            className={`flex-1 p-2 rounded-lg text-xl transition-all ${
-                              formData.feeling === n ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-green-500' : 'bg-gray-100 dark:bg-gray-700'
-                            }`}>
-                            {n === 1 ? '😫' : n === 2 ? '😓' : n === 3 ? '😐' : n === 4 ? '😊' : '🤩'}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipo de evento</label>
-                      <div className="grid grid-cols-4 gap-2">
-                        {PERSONAL_TYPES.map((type) => (
-                          <button key={type.id} type="button" onClick={() => setFormData({ ...formData, type: type.id })}
-                            className={`p-2 rounded-lg text-center text-xs transition-all ${
-                              formData.type === type.id ? `${type.color} text-white` : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                            }`}>
-                            <span className="text-lg">{type.icon}</span>
-                            <p className="mt-1 truncate">{type.label}</p>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Titulo</label>
                       <input type="text" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                         className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="Nombre del evento" />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hora</label>
-                      <input type="time" value={formData.time} onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                        className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hora</label>
+                        <input type="time" value={formData.time} onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                          className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lugar</label>
+                        <input type="text" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                          className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                      </div>
                     </div>
                   </>
+                )}
+
+                {formData.category === 'rest' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Motivo (opcional)</label>
+                    <input type="text" value={formData.reason} onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                      className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="Ej: Recuperacion post-carrera" />
+                  </div>
+                )}
+
+                {/* Datos de Strava si existen */}
+                {selectedEvent && (selectedEvent.elevationGain || selectedEvent.calories || selectedEvent.maxHeartRate || selectedEvent.averageCadence || selectedEvent.maxSpeed || selectedEvent.averageWatts || selectedEvent.sufferScore) && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {selectedEvent.elevationGain && (
+                      <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">Desnivel</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">{Math.round(selectedEvent.elevationGain)} m</p>
+                      </div>
+                    )}
+                    {selectedEvent.calories && (
+                      <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">Calorias</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">{selectedEvent.calories} kcal</p>
+                      </div>
+                    )}
+                    {selectedEvent.heartRate && (
+                      <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">FC Media</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">{selectedEvent.heartRate} bpm</p>
+                      </div>
+                    )}
+                    {selectedEvent.maxHeartRate && (
+                      <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">FC Max</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">{selectedEvent.maxHeartRate} bpm</p>
+                      </div>
+                    )}
+                    {selectedEvent.averageCadence && (
+                      <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">Cadencia</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">{Math.round(selectedEvent.averageCadence * 2)} ppm</p>
+                      </div>
+                    )}
+                    {selectedEvent.averageWatts && (
+                      <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">Potencia</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">{Math.round(selectedEvent.averageWatts)} W</p>
+                      </div>
+                    )}
+                    {selectedEvent.sufferScore && (
+                      <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">Esfuerzo</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">{selectedEvent.sufferScore}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Feeling solo para actividades deportivas */}
+                {['running', 'strength', 'cycling', 'swimming', 'other_sport'].includes(formData.category) && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Como te sentiste?</label>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <button key={n} type="button" onClick={() => setFormData({ ...formData, feeling: n })}
+                          className={`flex-1 p-2 rounded-lg text-xl transition-all ${
+                            formData.feeling === n ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-green-500' : 'bg-gray-100 dark:bg-gray-700'
+                          }`}>
+                          {n === 1 ? '😫' : n === 2 ? '😓' : n === 3 ? '😐' : n === 4 ? '😊' : '🤩'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )}
 
                 {/* Solo mostrar notas si no es el formato strava:xxx */}

@@ -227,18 +227,26 @@ async function executeGetEvents(args: Record<string, unknown>) {
 
 async function executeCreateEvent(args: Record<string, unknown>) {
   try {
+    const category = (args.category as string) || 'running';
+
+    // Construir eventData segun la categoria
+    const eventData: Record<string, unknown> = {};
+    if (category === 'running' && args.pace) {
+      eventData.pace = args.pace as string;
+    }
+
     const [event] = await db
       .insert(runningEvents)
       .values({
         date: args.date as string,
-        category: (args.category as string) || 'running',
+        category,
         type: args.type as string,
         title: (args.title as string) || null,
         time: (args.time as string) || null,
         distance: args.distance ? Number(args.distance) : null,
         duration: args.duration ? Number(args.duration) : null,
-        pace: (args.pace as string) || null,
         notes: (args.notes as string) || null,
+        eventData: Object.keys(eventData).length > 0 ? eventData : null,
         completed: 0,
       })
       .returning();

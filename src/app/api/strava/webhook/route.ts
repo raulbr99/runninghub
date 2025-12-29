@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       title: activity.name,
       distance: distanceKm,
       duration: durationMin,
-      pace,
+      eventData: pace ? { pace } : null,
       heartRate: activity.average_heartrate ? Math.round(activity.average_heartrate) : null,
       completed: 1,
       // Campos adicionales de Strava

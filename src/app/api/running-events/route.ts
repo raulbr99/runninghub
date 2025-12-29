@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { runningEvents } from '@/lib/db/schema';
+import { calendarEvents } from '@/lib/db/schema';
 import { eq, and, gte, lte } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
@@ -14,9 +14,9 @@ export async function GET(request: NextRequest) {
 
     const events = await db
       .select()
-      .from(runningEvents)
-      .where(and(gte(runningEvents.date, startDate), lte(runningEvents.date, endDate)))
-      .orderBy(runningEvents.date);
+      .from(calendarEvents)
+      .where(and(gte(calendarEvents.date, startDate), lte(calendarEvents.date, endDate)))
+      .orderBy(calendarEvents.date);
 
     return NextResponse.json(events);
   } catch (error) {
@@ -28,8 +28,34 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
+
+    // Construir eventData segun la categoria
+    const eventData: Record<string, unknown> = {};
+
+    if (data.category === 'running') {
+      if (data.pace) eventData.pace = data.pace;
+      if (data.cadence) eventData.cadence = data.cadence;
+    } else if (data.category === 'strength') {
+      if (data.exercises) eventData.exercises = data.exercises;
+      if (data.muscleGroups) eventData.muscleGroups = data.muscleGroups;
+    } else if (data.category === 'cycling') {
+      if (data.avgSpeed) eventData.avgSpeed = data.avgSpeed;
+      if (data.power) eventData.power = data.power;
+    } else if (data.category === 'swimming') {
+      if (data.laps) eventData.laps = data.laps;
+      if (data.poolLength) eventData.poolLength = data.poolLength;
+      if (data.strokeType) eventData.strokeType = data.strokeType;
+    } else if (data.category === 'other_sport') {
+      if (data.intensity) eventData.intensity = data.intensity;
+    } else if (data.category === 'personal') {
+      if (data.location) eventData.location = data.location;
+      if (data.allDay !== undefined) eventData.allDay = data.allDay;
+    } else if (data.category === 'rest') {
+      if (data.reason) eventData.reason = data.reason;
+    }
+
     const [event] = await db
-      .insert(runningEvents)
+      .insert(calendarEvents)
       .values({
         date: data.date,
         category: data.category || 'running',
@@ -38,11 +64,13 @@ export async function POST(request: NextRequest) {
         time: data.time || null,
         distance: data.distance || null,
         duration: data.duration || null,
-        pace: data.pace || null,
         notes: data.notes || null,
         heartRate: data.heartRate || null,
+        elevationGain: data.elevationGain || null,
+        calories: data.calories || null,
         feeling: data.feeling || null,
         completed: data.completed || 0,
+        eventData: Object.keys(eventData).length > 0 ? eventData : null,
       })
       .returning();
 
@@ -58,8 +86,33 @@ export async function PUT(request: NextRequest) {
     const data = await request.json();
     if (!data.id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
+    // Construir eventData segun la categoria
+    const eventData: Record<string, unknown> = {};
+
+    if (data.category === 'running') {
+      if (data.pace) eventData.pace = data.pace;
+      if (data.cadence) eventData.cadence = data.cadence;
+    } else if (data.category === 'strength') {
+      if (data.exercises) eventData.exercises = data.exercises;
+      if (data.muscleGroups) eventData.muscleGroups = data.muscleGroups;
+    } else if (data.category === 'cycling') {
+      if (data.avgSpeed) eventData.avgSpeed = data.avgSpeed;
+      if (data.power) eventData.power = data.power;
+    } else if (data.category === 'swimming') {
+      if (data.laps) eventData.laps = data.laps;
+      if (data.poolLength) eventData.poolLength = data.poolLength;
+      if (data.strokeType) eventData.strokeType = data.strokeType;
+    } else if (data.category === 'other_sport') {
+      if (data.intensity) eventData.intensity = data.intensity;
+    } else if (data.category === 'personal') {
+      if (data.location) eventData.location = data.location;
+      if (data.allDay !== undefined) eventData.allDay = data.allDay;
+    } else if (data.category === 'rest') {
+      if (data.reason) eventData.reason = data.reason;
+    }
+
     const [event] = await db
-      .update(runningEvents)
+      .update(calendarEvents)
       .set({
         date: data.date,
         category: data.category,
@@ -68,14 +121,16 @@ export async function PUT(request: NextRequest) {
         time: data.time,
         distance: data.distance,
         duration: data.duration,
-        pace: data.pace,
         notes: data.notes,
         heartRate: data.heartRate,
+        elevationGain: data.elevationGain,
+        calories: data.calories,
         feeling: data.feeling,
         completed: data.completed,
+        eventData: Object.keys(eventData).length > 0 ? eventData : null,
         updatedAt: new Date(),
       })
-      .where(eq(runningEvents.id, data.id))
+      .where(eq(calendarEvents.id, data.id))
       .returning();
 
     return NextResponse.json(event);
@@ -91,7 +146,7 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
-    await db.delete(runningEvents).where(eq(runningEvents.id, id));
+    await db.delete(calendarEvents).where(eq(calendarEvents.id, id));
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting event:', error);

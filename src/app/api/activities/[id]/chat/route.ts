@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { runningEvents, runnerProfile } from '@/lib/db/schema';
+import { calendarEvents, runnerProfile, EventData } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 interface ChatMessage {
@@ -19,8 +19,8 @@ export async function POST(
     // Obtener la actividad
     const events = await db
       .select()
-      .from(runningEvents)
-      .where(eq(runningEvents.id, id))
+      .from(calendarEvents)
+      .where(eq(calendarEvents.id, id))
       .limit(1);
 
     if (events.length === 0) {
@@ -28,6 +28,7 @@ export async function POST(
     }
 
     const activity = events[0];
+    const eventData = (activity.eventData || {}) as EventData;
 
     // Obtener perfil del corredor para contexto
     const profiles = await db.select().from(runnerProfile).limit(1);
@@ -43,7 +44,7 @@ export async function POST(
       duracion: activity.duration ? `${activity.duration} min` : null,
       tiempoMovimiento: activity.movingTime ? `${Math.floor(activity.movingTime / 60)}:${(activity.movingTime % 60).toString().padStart(2, '0')}` : null,
       tiempoTotal: activity.elapsedTime ? `${Math.floor(activity.elapsedTime / 60)}:${(activity.elapsedTime % 60).toString().padStart(2, '0')}` : null,
-      ritmoMedio: activity.pace,
+      ritmoMedio: eventData.pace,
       velocidadMedia: activity.averageSpeed ? `${(activity.averageSpeed * 3.6).toFixed(1)} km/h` : null,
       velocidadMaxima: activity.maxSpeed ? `${(activity.maxSpeed * 3.6).toFixed(1)} km/h` : null,
       fcMedia: activity.heartRate ? `${activity.heartRate} bpm` : null,
@@ -64,7 +65,7 @@ export async function POST(
       prs: activity.prCount,
       logros: activity.achievementCount,
       splits: activity.splitsMetric,
-      vueltas: activity.laps,
+      vueltas: activity.lapsData,
       segmentos: activity.segmentEfforts,
       sensacion: activity.feeling,
       descripcion: activity.description,
