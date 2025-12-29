@@ -123,7 +123,7 @@ export async function POST() {
           prCount: activity.pr_count || 0,
           // Datos detallados
           splitsMetric: activity.splits_metric || null,
-          lapsData: activity.laps || null,
+          laps: activity.laps || null,
           segmentEfforts: activity.segment_efforts || null,
         });
 

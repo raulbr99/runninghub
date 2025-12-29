@@ -96,8 +96,8 @@ export interface EventData {
   reason?: string;
 }
 
-// Eventos del calendario (antes running_events)
-export const calendarEvents = pgTable('calendar_events', {
+// Eventos del calendario (mantenemos nombre running_events en DB por compatibilidad)
+export const calendarEvents = pgTable('running_events', {
   id: uuid('id').primaryKey().defaultRandom(),
   date: date('date').notNull(),
   // Categoria y tipo
@@ -175,7 +175,7 @@ export const calendarEvents = pgTable('calendar_events', {
     average_speed: number;
     pace_zone: number;
   }>>(),
-  lapsData: jsonb('laps_data').$type<Array<{
+  laps: jsonb('laps').$type<Array<{
     name: string;
     elapsed_time: number;
     moving_time: number;

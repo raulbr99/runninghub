@@ -59,7 +59,7 @@ export async function GET(
       prs: activity.prCount,
       logros: activity.achievementCount,
       splits: activity.splitsMetric,
-      vueltas: activity.lapsData,
+      vueltas: activity.laps,
       segmentos: activity.segmentEfforts,
       sensacion: activity.feeling,
       descripcion: activity.description,
