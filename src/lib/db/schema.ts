@@ -54,24 +54,73 @@ export const runnerProfile = pgTable('runner_profile', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// Eventos de running
-export const runningEvents = pgTable('running_events', {
+// Tipos de eventos del calendario
+export type EventCategory = 'running' | 'strength' | 'cycling' | 'swimming' | 'other_sport' | 'personal' | 'rest';
+
+export type RunningType = 'easy' | 'tempo' | 'intervals' | 'fartlek' | 'long' | 'recovery' | 'race' | 'trail';
+export type StrengthType = 'upper' | 'lower' | 'full_body' | 'core' | 'functional';
+export type CyclingType = 'road' | 'mtb' | 'indoor' | 'gravel';
+export type SwimmingType = 'pool' | 'open_water';
+export type OtherSportType = 'hiking' | 'yoga' | 'stretching' | 'crossfit' | 'paddle' | 'football' | 'basketball' | 'tennis' | 'other';
+export type PersonalType = 'family' | 'social' | 'work' | 'medical' | 'travel' | 'birthday' | 'other';
+export type RestType = 'active_recovery' | 'complete_rest' | 'injury';
+
+// Datos especificos por categoria
+export interface StrengthExercise {
+  name: string;
+  sets: number;
+  reps: number;
+  weight?: number; // kg
+}
+
+export interface EventData {
+  // Running
+  pace?: string; // "5:30"
+  cadence?: number;
+  // Strength
+  exercises?: StrengthExercise[];
+  muscleGroups?: string[];
+  // Cycling
+  avgSpeed?: number; // km/h
+  power?: number; // watts
+  // Swimming
+  laps?: number;
+  poolLength?: number; // 25 o 50
+  strokeType?: string;
+  // Other sport
+  intensity?: 'low' | 'medium' | 'high';
+  // Personal
+  location?: string;
+  allDay?: boolean;
+  // Rest
+  reason?: string;
+}
+
+// Eventos del calendario (antes running_events)
+export const calendarEvents = pgTable('calendar_events', {
   id: uuid('id').primaryKey().defaultRandom(),
   date: date('date').notNull(),
-  category: text('category').default('running').notNull(), // 'running' | 'personal'
-  type: text('type').notNull(), // running: 'easy' | 'tempo' | 'intervals' | 'long' | 'rest' | 'race' | 'strength'
+  // Categoria y tipo
+  category: text('category').default('running').notNull(), // running | strength | cycling | swimming | other_sport | personal | rest
+  type: text('type').notNull(), // depende de la categoria
+  // Campos comunes
   title: text('title'),
   time: text('time'), // "14:30"
-  distance: real('distance'), // km
   duration: integer('duration'), // minutos
-  pace: text('pace'), // "5:30"
+  distance: real('distance'), // km (running, cycling, swimming en metros)
   notes: text('notes'),
-  heartRate: integer('heart_rate'),
   feeling: integer('feeling'), // 1-5
   completed: integer('completed').default(0),
+  // Datos especificos por categoria (JSON)
+  eventData: jsonb('event_data').$type<EventData>(),
+  // Metricas de cardio (running, cycling, swimming)
+  heartRate: integer('heart_rate'),
+  elevationGain: real('elevation_gain'), // metros
+  calories: integer('calories'),
+  // Timestamps
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  // Campos de Strava - Básicos
+  // Campos de Strava - Basicos
   stravaId: text('strava_id'),
   movingTime: integer('moving_time'), // segundos
   elapsedTime: integer('elapsed_time'), // segundos
@@ -81,11 +130,10 @@ export const runningEvents = pgTable('running_events', {
   // Velocidad y ritmo
   averageSpeed: real('average_speed'), // m/s
   maxSpeed: real('max_speed'), // m/s
-  // Elevación
-  elevationGain: real('elevation_gain'), // metros
+  // Elevacion detallada
   elevHigh: real('elev_high'), // metros
   elevLow: real('elev_low'), // metros
-  // Frecuencia cardíaca
+  // Frecuencia cardiaca
   maxHeartRate: integer('max_heart_rate'),
   hasHeartrate: integer('has_heartrate'),
   // Cadencia
@@ -96,12 +144,11 @@ export const runningEvents = pgTable('running_events', {
   weightedAverageWatts: real('weighted_average_watts'), // NP
   deviceWatts: integer('device_watts'),
   kilojoules: real('kilojoules'),
-  // Energía y esfuerzo
-  calories: integer('calories'),
+  // Esfuerzo
   sufferScore: integer('suffer_score'),
   // Temperatura
   averageTemp: real('average_temp'),
-  // Ubicación y mapa
+  // Ubicacion y mapa
   startLat: real('start_lat'),
   startLng: real('start_lng'),
   endLat: real('end_lat'),
@@ -128,7 +175,7 @@ export const runningEvents = pgTable('running_events', {
     average_speed: number;
     pace_zone: number;
   }>>(),
-  laps: jsonb('laps').$type<Array<{
+  lapsData: jsonb('laps_data').$type<Array<{
     name: string;
     elapsed_time: number;
     moving_time: number;
@@ -169,6 +216,9 @@ export const runningEvents = pgTable('running_events', {
     pr_rank?: number;
   }>>(),
 });
+
+// Alias para compatibilidad con codigo existente
+export const runningEvents = calendarEvents;
 
 // Registro de peso
 export const weightEntries = pgTable('weight_entries', {
@@ -323,6 +373,42 @@ export const dailyHabits = pgTable('daily_habits', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+// Hábitos personalizables
+export const customHabits = pgTable('custom_habits', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  description: text('description'),
+  icon: text('icon').default('⭐').notNull(), // emoji
+  color: text('color').default('#6366f1').notNull(), // hex color
+  // Frecuencia
+  frequency: text('frequency').default('daily').notNull(), // 'daily' | 'weekly' | 'specific_days'
+  specificDays: jsonb('specific_days').$type<number[]>(), // [0,1,2,3,4,5,6] para días específicos (0=domingo)
+  // Tipo de tracking
+  trackingType: text('tracking_type').default('boolean').notNull(), // 'boolean' | 'quantity' | 'duration'
+  targetValue: integer('target_value'), // meta diaria (ej: 8 vasos, 30 minutos)
+  unit: text('unit'), // 'vasos', 'minutos', 'páginas', etc.
+  // Gamificación
+  xpReward: integer('xp_reward').default(10).notNull(),
+  // Estado
+  isActive: integer('is_active').default(1).notNull(),
+  sortOrder: integer('sort_order').default(0).notNull(),
+  // Timestamps
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Registro de hábitos completados
+export const habitLogs = pgTable('habit_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  habitId: uuid('habit_id').references(() => customHabits.id, { onDelete: 'cascade' }).notNull(),
+  date: date('date').notNull(),
+  completed: integer('completed').default(1).notNull(),
+  value: real('value'), // valor actual (para quantity/duration)
+  notes: text('notes'),
+  xpEarned: integer('xp_earned').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 // Frases motivacionales personalizadas
 export const motivationalQuotes = pgTable('motivational_quotes', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -338,8 +424,11 @@ export type Conversation = typeof conversations.$inferSelect;
 export type NewConversation = typeof conversations.$inferInsert;
 export type Message = typeof messages.$inferSelect;
 export type NewMessage = typeof messages.$inferInsert;
-export type RunningEvent = typeof runningEvents.$inferSelect;
-export type NewRunningEvent = typeof runningEvents.$inferInsert;
+export type CalendarEvent = typeof calendarEvents.$inferSelect;
+export type NewCalendarEvent = typeof calendarEvents.$inferInsert;
+// Alias para compatibilidad
+export type RunningEvent = CalendarEvent;
+export type NewRunningEvent = NewCalendarEvent;
 export type RunnerProfile = typeof runnerProfile.$inferSelect;
 export type NewRunnerProfile = typeof runnerProfile.$inferInsert;
 export type WeightEntry = typeof weightEntries.$inferSelect;
@@ -366,3 +455,7 @@ export type DailyHabit = typeof dailyHabits.$inferSelect;
 export type NewDailyHabit = typeof dailyHabits.$inferInsert;
 export type MotivationalQuote = typeof motivationalQuotes.$inferSelect;
 export type NewMotivationalQuote = typeof motivationalQuotes.$inferInsert;
+export type CustomHabit = typeof customHabits.$inferSelect;
+export type NewCustomHabit = typeof customHabits.$inferInsert;
+export type HabitLog = typeof habitLogs.$inferSelect;
+export type NewHabitLog = typeof habitLogs.$inferInsert;

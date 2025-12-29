@@ -71,7 +71,7 @@ export async function POST() {
           title: activity.name,
           distance: distanceKm,
           duration: durationMin,
-          pace,
+          eventData: pace ? { pace } : null,
           heartRate: activity.average_heartrate ? Math.round(activity.average_heartrate) : null,
           completed: 1,
           // Campos básicos de Strava
@@ -123,7 +123,7 @@ export async function POST() {
           prCount: activity.pr_count || 0,
           // Datos detallados
           splitsMetric: activity.splits_metric || null,
-          laps: activity.laps || null,
+          lapsData: activity.laps || null,
           segmentEfforts: activity.segment_efforts || null,
         });
 
