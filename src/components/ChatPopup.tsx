@@ -9,6 +9,15 @@ interface Message {
   content: string;
 }
 
+interface LifestyleInfo {
+  occupation?: string;
+  workScheduleStart?: string;
+  workScheduleEnd?: string;
+  personality?: string;
+  relationshipStatus?: string;
+  lifeNotes?: string;
+}
+
 interface RunnerProfile {
   id: string;
   name: string | null;
@@ -25,6 +34,7 @@ interface RunnerProfile {
   targetRace: string | null;
   injuries: string | null;
   healthNotes: string | null;
+  additionalInfo: LifestyleInfo | null;
 }
 
 interface WeightEntry {
@@ -47,6 +57,7 @@ const getPageContext = (pathname: string): PageContext => {
   if (pathname === '/nutrition') return { page: 'nutricion', data: { description: 'Registro de comidas y macros' } };
   if (pathname === '/profile') return { page: 'perfil', data: { description: 'Perfil del corredor y logros' } };
   if (pathname === '/reading') return { page: 'biblioteca', data: { description: 'Lista de libros y lectura' } };
+  if (pathname === '/habits') return { page: 'habitos', data: { description: 'Habitos personalizables diarios' } };
   if (pathname === '/achievements') return { page: 'logros', data: { description: 'Todos los logros y progreso' } };
   if (pathname === '/settings') return { page: 'ajustes', data: { description: 'Configuracion de la app' } };
   if (pathname.startsWith('/activity/')) return { page: 'actividad', data: { description: 'Detalle de actividad de Strava' } };
@@ -122,6 +133,33 @@ CONTEXTO ACTUAL:
     if (profile?.targetRace) profileInfo.push(`Carrera objetivo: ${profile.targetRace}`);
     if (profile?.injuries) profileInfo.push(`Lesiones: ${profile.injuries}`);
     if (profile?.healthNotes) profileInfo.push(`Salud: ${profile.healthNotes}`);
+
+    // Estilo de vida
+    const lifestyle = profile?.additionalInfo;
+    if (lifestyle) {
+      if (lifestyle.occupation) profileInfo.push(`Ocupacion: ${lifestyle.occupation}`);
+      if (lifestyle.workScheduleStart && lifestyle.workScheduleEnd) {
+        profileInfo.push(`Horario laboral: ${lifestyle.workScheduleStart} a ${lifestyle.workScheduleEnd}`);
+      }
+      if (lifestyle.personality) {
+        const personalityMap: Record<string, string> = {
+          introvert: 'Introvertido/timido',
+          extrovert: 'Extrovertido/social',
+          ambivert: 'Ambivertido'
+        };
+        profileInfo.push(`Personalidad: ${personalityMap[lifestyle.personality] || lifestyle.personality}`);
+      }
+      if (lifestyle.relationshipStatus) {
+        const relationMap: Record<string, string> = {
+          single: 'Soltero/a',
+          relationship: 'Con pareja',
+          married: 'Casado/a',
+          complicated: 'Es complicado'
+        };
+        profileInfo.push(`Estado: ${relationMap[lifestyle.relationshipStatus] || lifestyle.relationshipStatus}`);
+      }
+      if (lifestyle.lifeNotes) profileInfo.push(`Notas de vida: ${lifestyle.lifeNotes}`);
+    }
 
     if (profileInfo.length > 0) {
       basePrompt += `\n\n--- PERFIL DEL USUARIO ---\n${profileInfo.join('\n')}\n--- FIN PERFIL ---`;

@@ -18,6 +18,15 @@ interface AchievementsData {
   stats: { unlocked: number; total: number; percent: number };
 }
 
+interface LifestyleInfo {
+  occupation?: string;
+  workScheduleStart?: string;
+  workScheduleEnd?: string;
+  personality?: string;
+  relationshipStatus?: string;
+  lifeNotes?: string;
+}
+
 interface RunnerProfile {
   id: string;
   name: string | null;
@@ -39,6 +48,7 @@ interface RunnerProfile {
   preferredTerrain: string | null;
   availableDays: string | null;
   maxTimePerSession: number | null;
+  additionalInfo: LifestyleInfo | null;
 }
 
 export default function ProfilePage() {
@@ -67,6 +77,13 @@ export default function ProfilePage() {
     preferredTerrain: '',
     availableDays: '',
     maxTimePerSession: '',
+    // Estilo de vida
+    occupation: '',
+    workScheduleStart: '',
+    workScheduleEnd: '',
+    personality: '',
+    relationshipStatus: '',
+    lifeNotes: '',
   });
 
   useEffect(() => {
@@ -84,6 +101,7 @@ export default function ProfilePage() {
         const data = await profileRes.json();
         setProfile(data);
         if (data) {
+          const lifestyle = data.additionalInfo || {};
           setFormData({
             name: data.name || '',
             age: data.age?.toString() || '',
@@ -104,6 +122,13 @@ export default function ProfilePage() {
             preferredTerrain: data.preferredTerrain || '',
             availableDays: data.availableDays || '',
             maxTimePerSession: data.maxTimePerSession?.toString() || '',
+            // Estilo de vida
+            occupation: lifestyle.occupation || '',
+            workScheduleStart: lifestyle.workScheduleStart || '',
+            workScheduleEnd: lifestyle.workScheduleEnd || '',
+            personality: lifestyle.personality || '',
+            relationshipStatus: lifestyle.relationshipStatus || '',
+            lifeNotes: lifestyle.lifeNotes || '',
           });
         }
       }
@@ -143,6 +168,14 @@ export default function ProfilePage() {
       preferredTerrain: formData.preferredTerrain || null,
       availableDays: formData.availableDays || null,
       maxTimePerSession: formData.maxTimePerSession ? parseInt(formData.maxTimePerSession) : null,
+      additionalInfo: {
+        occupation: formData.occupation || null,
+        workScheduleStart: formData.workScheduleStart || null,
+        workScheduleEnd: formData.workScheduleEnd || null,
+        personality: formData.personality || null,
+        relationshipStatus: formData.relationshipStatus || null,
+        lifeNotes: formData.lifeNotes || null,
+      },
     };
 
     try {
@@ -461,6 +494,89 @@ export default function ProfilePage() {
                 rows={2}
                 className="w-full p-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Alergias, medicamentos, condiciones medicas relevantes..."
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Estilo de Vida */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <span>🌟</span> Estilo de Vida
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">Info para que el coach entienda tu contexto personal</p>
+          </div>
+          <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ocupacion</label>
+              <input
+                type="text"
+                name="occupation"
+                value={formData.occupation}
+                onChange={handleChange}
+                className="w-full p-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="Ej: Programador, Estudiante, Profesor..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado de relacion</label>
+              <select
+                name="relationshipStatus"
+                value={formData.relationshipStatus}
+                onChange={handleChange}
+                className="w-full p-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              >
+                <option value="">Seleccionar...</option>
+                <option value="single">Soltero/a</option>
+                <option value="relationship">Con pareja</option>
+                <option value="married">Casado/a</option>
+                <option value="complicated">Es complicado</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Horario laboral inicio</label>
+              <input
+                type="time"
+                name="workScheduleStart"
+                value={formData.workScheduleStart}
+                onChange={handleChange}
+                className="w-full p-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Horario laboral fin</label>
+              <input
+                type="time"
+                name="workScheduleEnd"
+                value={formData.workScheduleEnd}
+                onChange={handleChange}
+                className="w-full p-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Personalidad</label>
+              <select
+                name="personality"
+                value={formData.personality}
+                onChange={handleChange}
+                className="w-full p-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              >
+                <option value="">Seleccionar...</option>
+                <option value="introvert">Introvertido/timido</option>
+                <option value="extrovert">Extrovertido/social</option>
+                <option value="ambivert">Ambivertido (ambos)</option>
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas de vida</label>
+              <textarea
+                name="lifeNotes"
+                value={formData.lifeNotes}
+                onChange={handleChange}
+                rows={2}
+                className="w-full p-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="Cualquier otra info relevante sobre tu vida: hobbies, responsabilidades, limitaciones de tiempo..."
               />
             </div>
           </div>
