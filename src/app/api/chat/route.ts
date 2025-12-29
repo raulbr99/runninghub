@@ -464,10 +464,27 @@ export async function POST(request: NextRequest) {
           if (toolCallData.hasToolCall && toolCallData.toolCallArgs) {
             try {
               let cleanArgs = toolCallData.toolCallArgs.trim();
-              const firstBrace = cleanArgs.indexOf('{');
-              const lastBrace = cleanArgs.lastIndexOf('}');
-              if (firstBrace !== -1 && lastBrace > firstBrace) {
-                cleanArgs = cleanArgs.substring(firstBrace, lastBrace + 1);
+
+              // Find the first complete JSON object by counting braces
+              let braceCount = 0;
+              let startIndex = -1;
+              let endIndex = -1;
+
+              for (let i = 0; i < cleanArgs.length; i++) {
+                if (cleanArgs[i] === '{') {
+                  if (braceCount === 0) startIndex = i;
+                  braceCount++;
+                } else if (cleanArgs[i] === '}') {
+                  braceCount--;
+                  if (braceCount === 0 && startIndex !== -1) {
+                    endIndex = i;
+                    break;
+                  }
+                }
+              }
+
+              if (startIndex !== -1 && endIndex !== -1) {
+                cleanArgs = cleanArgs.substring(startIndex, endIndex + 1);
               }
 
               const args = JSON.parse(cleanArgs);
