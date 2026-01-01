@@ -9,6 +9,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const model = searchParams.get('model') || 'openai/gpt-4o-mini';
 
     // Obtener la actividad
     const events = await db
@@ -103,7 +105,7 @@ Usa un tono motivador pero profesional. Sé específico con los datos.`;
         'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
       },
       body: JSON.stringify({
-        model: 'openai/gpt-4o-mini',
+        model: model,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: 'Genera el análisis de esta actividad.' }

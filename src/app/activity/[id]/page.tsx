@@ -279,6 +279,7 @@ export default function ActivityPage() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [chatModel, setChatModel] = useState<string>('openai/gpt-4o-mini');
+  const [summaryModel, setSummaryModel] = useState<string>('openai/gpt-4o-mini');
 
   // Chart toggles (Strava style)
   const [showPace, setShowPace] = useState(true);
@@ -318,6 +319,7 @@ export default function ActivityPage() {
           if (data.selectedModels && data.selectedModels.length > 0) {
             setAvailableModels(data.selectedModels);
             setChatModel(data.selectedModels[0]);
+            setSummaryModel(data.selectedModels[0]);
           }
         }
       } catch (error) {
@@ -364,23 +366,25 @@ export default function ActivityPage() {
     temp: streams.temp?.data?.[i],
   })) || [];
 
+  // Función para cargar el resumen de IA
+  async function loadSummary(model?: string) {
+    setLoadingSummary(true);
+    try {
+      const modelParam = model || summaryModel;
+      const res = await fetch(`/api/activities/${params.id}/summary?model=${encodeURIComponent(modelParam)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSummary(data.summary);
+      }
+    } catch (error) {
+      console.error('Error loading summary:', error);
+    } finally {
+      setLoadingSummary(false);
+    }
+  }
+
   // Cargar resumen de IA cuando se selecciona la pestaña de análisis
   useEffect(() => {
-    async function loadSummary() {
-      setLoadingSummary(true);
-      try {
-        const res = await fetch(`/api/activities/${params.id}/summary`);
-        if (res.ok) {
-          const data = await res.json();
-          setSummary(data.summary);
-        }
-      } catch (error) {
-        console.error('Error loading summary:', error);
-      } finally {
-        setLoadingSummary(false);
-      }
-    }
-
     if (activeTab === 'analysis' && !summary && activity) {
       loadSummary();
     }
@@ -807,14 +811,27 @@ export default function ActivityPage() {
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Analisis con IA</h2>
-              {summary && (
+              <div className="flex items-center gap-3">
+                {availableModels.length > 0 && (
+                  <select
+                    value={summaryModel}
+                    onChange={(e) => setSummaryModel(e.target.value)}
+                    className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    {availableModels.map((model) => (
+                      <option key={model} value={model}>
+                        {model.split('/').pop()}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <button
-                  onClick={() => { setSummary(null); }}
+                  onClick={() => { setSummary(null); loadSummary(summaryModel); }}
                   className="text-sm text-green-600 hover:text-green-700"
                 >
-                  Regenerar
+                  {summary ? 'Regenerar' : 'Generar'}
                 </button>
-              )}
+              </div>
             </div>
             {loadingSummary ? (
               <div className="flex items-center justify-center py-12">
