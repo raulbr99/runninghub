@@ -187,7 +187,56 @@ Genera el plan completo con TODOS los entrenamientos de las ${weeks} semanas.`;
         ],
         temperature: 0.3,
         max_tokens: 16000,
-        ...(modelToUse.startsWith('openai/') ? { response_format: { type: 'json_object' } } : {}),
+        response_format: {
+          type: 'json_schema',
+          json_schema: {
+            name: 'training_plan',
+            strict: true,
+            schema: {
+              type: 'object',
+              properties: {
+                planName: { type: 'string', description: 'Nombre descriptivo del plan' },
+                totalWeeks: { type: 'number', description: 'Numero total de semanas' },
+                weeklyVolume: {
+                  type: 'array',
+                  items: { type: 'number' },
+                  description: 'Km por semana'
+                },
+                phases: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      name: { type: 'string' },
+                      weeks: { type: 'string' },
+                      focus: { type: 'string' }
+                    },
+                    required: ['name', 'weeks', 'focus'],
+                    additionalProperties: false
+                  }
+                },
+                events: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      date: { type: 'string', description: 'Fecha YYYY-MM-DD' },
+                      type: { type: 'string', enum: ['easy', 'tempo', 'intervals', 'fartlek', 'long', 'recovery', 'race', 'strength', 'rest'] },
+                      title: { type: 'string' },
+                      distance: { type: ['number', 'null'] },
+                      duration: { type: 'number' },
+                      notes: { type: 'string' }
+                    },
+                    required: ['date', 'type', 'title', 'duration', 'notes'],
+                    additionalProperties: false
+                  }
+                }
+              },
+              required: ['planName', 'totalWeeks', 'weeklyVolume', 'phases', 'events'],
+              additionalProperties: false
+            }
+          }
+        },
       }),
     });
 
