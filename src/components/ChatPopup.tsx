@@ -181,9 +181,6 @@ export default function ChatPopup() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // No mostrar en la pagina del coach (ya tiene su propio chat)
-  if (pathname === '/coach') return null;
-
   useEffect(() => {
     // Cargar datos iniciales
     loadProfile();
@@ -313,6 +310,9 @@ export default function ChatPopup() {
   };
 
   const context = getPageContext(pathname);
+
+  // No mostrar en la pagina del coach (ya tiene su propio chat)
+  if (pathname === '/coach') return null;
 
   return (
     <>
