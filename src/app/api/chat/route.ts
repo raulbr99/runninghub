@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { runnerProfile, runningEvents, weightEntries, nutritionEntries, nutritionGoals } from '@/lib/db/schema';
+import { runnerProfile, runningEvents, weightEntries } from '@/lib/db/schema';
 import { and, gte, lte, desc, eq } from 'drizzle-orm';
 
 // Tool definitions
@@ -112,60 +112,6 @@ const getWeightHistoryTool = {
   },
 };
 
-const logMealTool = {
-  type: 'function' as const,
-  function: {
-    name: 'log_meal',
-    description: 'Registra una comida.',
-    parameters: {
-      type: 'object',
-      properties: {
-        date: { type: 'string', description: 'Fecha YYYY-MM-DD (por defecto hoy)' },
-        mealType: { type: 'string', enum: ['breakfast', 'lunch', 'dinner', 'snack'], description: 'Tipo de comida' },
-        description: { type: 'string', description: 'Descripcion de la comida' },
-        calories: { type: 'number', description: 'Calorias' },
-        protein: { type: 'number', description: 'Proteinas en gramos' },
-        carbs: { type: 'number', description: 'Carbohidratos en gramos' },
-        fats: { type: 'number', description: 'Grasas en gramos' },
-        notes: { type: 'string', description: 'Notas' },
-      },
-      required: ['mealType', 'description'],
-    },
-  },
-};
-
-const getNutritionSummaryTool = {
-  type: 'function' as const,
-  function: {
-    name: 'get_nutrition_summary',
-    description: 'Obtiene el resumen nutricional del dia.',
-    parameters: {
-      type: 'object',
-      properties: {
-        date: { type: 'string', description: 'Fecha YYYY-MM-DD (por defecto hoy)' },
-      },
-      required: [],
-    },
-  },
-};
-
-const setNutritionGoalsTool = {
-  type: 'function' as const,
-  function: {
-    name: 'set_nutrition_goals',
-    description: 'Establece los objetivos nutricionales diarios.',
-    parameters: {
-      type: 'object',
-      properties: {
-        calories: { type: 'number', description: 'Calorias objetivo' },
-        protein: { type: 'number', description: 'Proteinas objetivo en gramos' },
-        carbs: { type: 'number', description: 'Carbohidratos objetivo en gramos' },
-        fats: { type: 'number', description: 'Grasas objetivo en gramos' },
-      },
-      required: [],
-    },
-  },
-};
 
 // Tool execution functions
 async function executeProfileSave(args: Record<string, unknown>) {
@@ -292,76 +238,6 @@ async function executeGetWeightHistory(args: Record<string, unknown>) {
   }
 }
 
-async function executeLogMeal(args: Record<string, unknown>) {
-  try {
-    const date = (args.date as string) || new Date().toISOString().split('T')[0];
-    const [entry] = await db
-      .insert(nutritionEntries)
-      .values({
-        date,
-        mealType: args.mealType as string,
-        description: args.description as string,
-        calories: args.calories ? Number(args.calories) : null,
-        protein: args.protein ? Number(args.protein) : null,
-        carbs: args.carbs ? Number(args.carbs) : null,
-        fats: args.fats ? Number(args.fats) : null,
-        notes: (args.notes as string) || null,
-      })
-      .returning();
-    return { success: true, message: 'Comida registrada', entry };
-  } catch (error) {
-    console.error('Error logging meal:', error);
-    return { success: false, message: 'Error al registrar comida' };
-  }
-}
-
-async function executeGetNutritionSummary(args: Record<string, unknown>) {
-  try {
-    const date = (args.date as string) || new Date().toISOString().split('T')[0];
-    const entries = await db
-      .select()
-      .from(nutritionEntries)
-      .where(gte(nutritionEntries.date, date));
-
-    const todayEntries = entries.filter(e => e.date === date);
-    const totals = todayEntries.reduce((acc, e) => ({
-      calories: acc.calories + (e.calories || 0),
-      protein: acc.protein + (e.protein || 0),
-      carbs: acc.carbs + (e.carbs || 0),
-      fats: acc.fats + (e.fats || 0),
-    }), { calories: 0, protein: 0, carbs: 0, fats: 0 });
-
-    const goals = await db.select().from(nutritionGoals).limit(1);
-    return { success: true, date, meals: todayEntries, totals, goals: goals[0] || null };
-  } catch (error) {
-    console.error('Error getting nutrition summary:', error);
-    return { success: false, message: 'Error al obtener resumen' };
-  }
-}
-
-async function executeSetNutritionGoals(args: Record<string, unknown>) {
-  try {
-    const existing = await db.select().from(nutritionGoals).limit(1);
-    const data = {
-      calories: args.calories ? Number(args.calories) : null,
-      protein: args.protein ? Number(args.protein) : null,
-      carbs: args.carbs ? Number(args.carbs) : null,
-      fats: args.fats ? Number(args.fats) : null,
-      updatedAt: new Date(),
-    };
-
-    if (existing.length === 0) {
-      await db.insert(nutritionGoals).values(data);
-    } else {
-      await db.update(nutritionGoals).set(data).where(eq(nutritionGoals.id, existing[0].id));
-    }
-    return { success: true, message: 'Objetivos actualizados' };
-  } catch (error) {
-    console.error('Error setting goals:', error);
-    return { success: false, message: 'Error al establecer objetivos' };
-  }
-}
-
 async function executeTool(name: string, args: Record<string, unknown>) {
   switch (name) {
     case 'save_runner_profile': return executeProfileSave(args);
@@ -369,24 +245,44 @@ async function executeTool(name: string, args: Record<string, unknown>) {
     case 'create_running_event': return executeCreateEvent(args);
     case 'log_weight': return executeLogWeight(args);
     case 'get_weight_history': return executeGetWeightHistory(args);
-    case 'log_meal': return executeLogMeal(args);
-    case 'get_nutrition_summary': return executeGetNutritionSummary(args);
-    case 'set_nutrition_goals': return executeSetNutritionGoals(args);
     default: return { success: false, message: `Tool desconocido: ${name}` };
   }
 }
 
+interface MessageContent {
+  type: 'text' | 'image_url';
+  text?: string;
+  image_url?: { url: string };
+}
+
 interface ChatRequest {
-  messages: Array<{ role: string; content: string }>;
+  messages: Array<{ role: string; content: string | MessageContent[] }>;
   model?: string;
   temperature?: number;
+  hasImage?: boolean;
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages, model = 'openai/gpt-4o', temperature = 0.7 }: ChatRequest = await request.json();
+    const { messages, model = 'openai/gpt-4o', temperature = 0.7, hasImage = false }: ChatRequest = await request.json();
 
-    const tools = [saveProfileTool, getEventsTool, createEventTool, logWeightTool, getWeightHistoryTool, logMealTool, getNutritionSummaryTool, setNutritionGoalsTool];
+    const tools = [saveProfileTool, getEventsTool, createEventTool, logWeightTool, getWeightHistoryTool];
+
+    // When there's an image, don't use tools (some models don't support both)
+    const requestBody: Record<string, unknown> = {
+      model,
+      messages,
+      temperature,
+      stream: true,
+      max_tokens: 2000,
+      frequency_penalty: 0.5,
+      presence_penalty: 0.3,
+    };
+
+    if (!hasImage) {
+      requestBody.tools = tools;
+      requestBody.tool_choice = 'auto';
+    }
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -396,17 +292,7 @@ export async function POST(request: NextRequest) {
         'HTTP-Referer': 'http://localhost:3000',
         'X-Title': 'RunningHub Coach',
       },
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature,
-        tools,
-        tool_choice: 'auto',
-        stream: true,
-        max_tokens: 2000,
-        frequency_penalty: 0.5,
-        presence_penalty: 0.3,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {

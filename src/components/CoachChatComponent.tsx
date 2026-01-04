@@ -6,6 +6,7 @@ import MarkdownRenderer from './MarkdownRenderer';
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  image?: string; // base64 image
 }
 
 interface RunnerProfile {
@@ -126,6 +127,7 @@ export default function CoachChatComponent({ conversationId, onConversationCreat
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [pastedImage, setPastedImage] = useState<string | null>(null);
   const [model, setModel] = useState('openai/gpt-4o');
   const [availableModels, setAvailableModels] = useState<string[]>(['openai/gpt-4o']);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
@@ -270,29 +272,44 @@ export default function CoachChatComponent({ conversationId, onConversationCreat
   };
 
   const sendMessage = async () => {
-    if (!input.trim() || loading) return;
+    if ((!input.trim() && !pastedImage) || loading) return;
 
-    const userMessage: Message = { role: 'user', content: input };
+    const userMessage: Message = { role: 'user', content: input || 'Analiza esta imagen', image: pastedImage || undefined };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
+    const currentImage = pastedImage;
     setInput('');
+    setPastedImage(null);
     setLoading(true);
 
     let convId = currentConversationId;
-    if (!convId) convId = await createConversation(input);
-    if (convId) await saveMessage(convId, 'user', input);
+    if (!convId) convId = await createConversation(input || 'Imagen adjunta');
+    if (convId) await saveMessage(convId, 'user', input || 'Imagen adjunta');
 
     try {
       const systemPrompt = buildSystemPrompt(profile, latestWeight);
+
+      // Build messages with image support
       const apiMessages = [
         { role: 'system', content: systemPrompt },
-        ...newMessages.map(msg => ({ role: msg.role, content: msg.content }))
+        ...newMessages.map(msg => {
+          if (msg.image) {
+            return {
+              role: msg.role,
+              content: [
+                { type: 'text', text: msg.content || 'Analiza esta imagen' },
+                { type: 'image_url', image_url: { url: msg.image } }
+              ]
+            };
+          }
+          return { role: msg.role, content: msg.content };
+        })
       ];
 
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: apiMessages, model, temperature: 0.7 }),
+        body: JSON.stringify({ messages: apiMessages, model, temperature: 0.7, hasImage: !!currentImage }),
       });
 
       if (!response.ok) throw new Error('Error en la respuesta');
@@ -348,6 +365,29 @@ export default function CoachChatComponent({ conversationId, onConversationCreat
   const clearChat = () => {
     setMessages([]);
     setCurrentConversationId(null);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const base64 = event.target?.result as string;
+            setPastedImage(base64);
+          };
+          reader.readAsDataURL(file);
+        }
+        break;
+      }
+    }
+  };
+
+  const removeImage = () => {
+    setPastedImage(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -532,7 +572,12 @@ export default function CoachChatComponent({ conversationId, onConversationCreat
                         : 'flex-1 text-zinc-200 pt-1'
                     }`}>
                       {msg.role === 'user' ? (
-                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                        <div>
+                          {msg.image && (
+                            <img src={msg.image} alt="Attached" className="max-h-48 rounded-lg mb-2" />
+                          )}
+                          <p className="whitespace-pre-wrap">{msg.content}</p>
+                        </div>
                       ) : msg.content ? (
                         <div className="prose prose-sm prose-invert prose-emerald max-w-none prose-p:text-zinc-300 prose-headings:text-zinc-100 prose-strong:text-zinc-100 prose-code:text-emerald-400 prose-li:text-zinc-300">
                           <MarkdownRenderer content={msg.content} />
@@ -648,19 +693,36 @@ export default function CoachChatComponent({ conversationId, onConversationCreat
               </div>
 
               <div className="flex-1 relative">
+                {pastedImage && (
+                  <div className="absolute bottom-full mb-2 left-0 bg-zinc-800 rounded-lg p-2 border border-zinc-700">
+                    <div className="relative">
+                      <img src={pastedImage} alt="Preview" className="max-h-32 max-w-48 rounded object-contain" />
+                      <button
+                        onClick={removeImage}
+                        className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-400 transition-colors"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    <p className="text-xs text-zinc-500 mt-1">Imagen lista para enviar</p>
+                  </div>
+                )}
                 <input
                   ref={inputRef}
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                  placeholder="Escribe tu pregunta..."
+                  onPaste={handlePaste}
+                  placeholder={pastedImage ? "Añade un mensaje o envia la imagen..." : "Escribe tu pregunta o pega una imagen..."}
                   className="w-full p-2.5 sm:p-3 pr-12 border border-zinc-700/50 rounded-lg bg-zinc-800/50 text-zinc-100 placeholder-zinc-600 focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all text-sm"
                   disabled={loading}
                 />
                 <button
                   onClick={sendMessage}
-                  disabled={loading || !input.trim()}
+                  disabled={loading || (!input.trim() && !pastedImage)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                 >
                   {loading ? (
