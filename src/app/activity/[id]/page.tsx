@@ -20,8 +20,8 @@ import {
 const ActivityMap = dynamic(() => import('@/components/ActivityMap'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-80 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+    <div className="w-full h-80 rounded-xl bg-zinc-800 flex items-center justify-center">
+      <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
     </div>
   ),
 });
@@ -143,18 +143,18 @@ interface Activity {
   segmentEfforts?: SegmentEffort[];
 }
 
-const ACTIVITY_TYPES: Record<string, { icon: string; label: string; color: string }> = {
-  easy: { icon: '🏃', label: 'Rodaje', color: 'bg-green-500' },
-  tempo: { icon: '💨', label: 'Tempo', color: 'bg-yellow-500' },
-  intervals: { icon: '⚡', label: 'Series', color: 'bg-red-500' },
-  long: { icon: '🏔️', label: 'Largo', color: 'bg-blue-500' },
-  recovery: { icon: '🧘', label: 'Recuperacion', color: 'bg-purple-500' },
-  race: { icon: '🏆', label: 'Competicion', color: 'bg-orange-500' },
-  strength: { icon: '💪', label: 'Fuerza', color: 'bg-pink-500' },
-  cycling: { icon: '🚴', label: 'Ciclismo', color: 'bg-cyan-500' },
-  swim: { icon: '🏊', label: 'Natacion', color: 'bg-blue-400' },
-  walk: { icon: '🚶', label: 'Caminata', color: 'bg-teal-500' },
-  other: { icon: '🎯', label: 'Otro', color: 'bg-gray-500' },
+const ACTIVITY_TYPES: Record<string, { label: string; color: string }> = {
+  easy: { label: 'Rodaje', color: 'emerald' },
+  tempo: { label: 'Tempo', color: 'amber' },
+  intervals: { label: 'Series', color: 'red' },
+  long: { label: 'Largo', color: 'blue' },
+  recovery: { label: 'Recuperacion', color: 'purple' },
+  race: { label: 'Competicion', color: 'orange' },
+  strength: { label: 'Fuerza', color: 'pink' },
+  cycling: { label: 'Ciclismo', color: 'cyan' },
+  swim: { label: 'Natacion', color: 'sky' },
+  walk: { label: 'Caminata', color: 'teal' },
+  other: { label: 'Otro', color: 'zinc' },
 };
 
 function formatTime(seconds: number): string {
@@ -426,17 +426,17 @@ export default function ActivityPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!activity) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center gap-4">
-        <p className="text-gray-600 dark:text-gray-400">Actividad no encontrada</p>
-        <Link href="/calendar" className="text-green-600 hover:underline">
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center gap-4">
+        <p className="text-zinc-500">Actividad no encontrada</p>
+        <Link href="/calendar" className="text-emerald-500 hover:text-emerald-400">
           Volver al calendario
         </Link>
       </div>
@@ -450,24 +450,24 @@ export default function ActivityPage() {
   const hasSegments = activity.segmentEfforts && activity.segmentEfforts.length > 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-zinc-950">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
+      <header className="bg-zinc-900/80 backdrop-blur border-b border-zinc-800/50 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
             >
-              <svg className="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <svg className="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
               </svg>
             </button>
             <div className="flex-1">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-lg font-light text-zinc-100">
                 {activity.title || typeInfo.label}
               </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-zinc-500">
                 {new Date(activity.date).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                 {activity.time && ` a las ${activity.time}`}
               </p>
@@ -477,9 +477,9 @@ export default function ActivityPage() {
                 href={`https://www.strava.com/activities/${activity.stravaId}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors"
+                className="p-2 hover:bg-orange-500/10 rounded-lg transition-colors"
               >
-                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="#FC4C02">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#FC4C02">
                   <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/>
                 </svg>
               </a>
@@ -490,45 +490,36 @@ export default function ActivityPage() {
 
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-4">
         {/* Main Stats Bar */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-          <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
-            <div className="flex items-center gap-3">
-              <span className={`text-2xl p-2 rounded-lg ${typeInfo.color} bg-opacity-20`}>
-                {typeInfo.icon}
-              </span>
-              <span className={`font-medium ${typeInfo.color.replace('bg-', 'text-')}`}>
-                {typeInfo.label}
-              </span>
-            </div>
-            <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+        <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50">
+          <div className="flex items-center justify-between p-4 border-b border-zinc-800/50">
+            <span className={`px-3 py-1 rounded-lg text-sm font-medium bg-${typeInfo.color}-500/20 text-${typeInfo.color}-400`}>
+              {typeInfo.label}
+            </span>
+            <div className="flex items-center gap-4 text-sm text-zinc-500">
               {activity.gearName && (
-                <span className="flex items-center gap-1">
-                  <span>👟</span> {activity.gearName}
-                </span>
+                <span>{activity.gearName}</span>
               )}
               {activity.deviceName && (
-                <span className="flex items-center gap-1">
-                  <span>⌚</span> {activity.deviceName}
-                </span>
+                <span>{activity.deviceName}</span>
               )}
             </div>
           </div>
-          <div className="grid grid-cols-4 divide-x divide-gray-100 dark:divide-gray-700">
+          <div className="grid grid-cols-4 divide-x divide-zinc-800/50">
             <div className="p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{activity.distance?.toFixed(2) || '-'}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Kilometros</p>
+              <p className="text-2xl font-mono text-zinc-100">{activity.distance?.toFixed(2) || '-'}</p>
+              <p className="text-xs text-zinc-500 uppercase tracking-wider">km</p>
             </div>
             <div className="p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{activity.movingTime ? formatTime(activity.movingTime) : '-'}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Tiempo</p>
+              <p className="text-2xl font-mono text-zinc-100">{activity.movingTime ? formatTime(activity.movingTime) : '-'}</p>
+              <p className="text-xs text-zinc-500 uppercase tracking-wider">Tiempo</p>
             </div>
             <div className="p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{activity.pace || '-'}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Ritmo /km</p>
+              <p className="text-2xl font-mono text-zinc-100">{activity.pace || '-'}</p>
+              <p className="text-xs text-zinc-500 uppercase tracking-wider">/km</p>
             </div>
             <div className="p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{activity.elevationGain ? Math.round(activity.elevationGain) : '-'}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Desnivel (m)</p>
+              <p className="text-2xl font-mono text-zinc-100">{activity.elevationGain ? Math.round(activity.elevationGain) : '-'}</p>
+              <p className="text-xs text-zinc-500 uppercase tracking-wider">m+</p>
             </div>
           </div>
         </div>
@@ -538,30 +529,30 @@ export default function ActivityPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Splits Table - Left */}
             {hasSplits && (
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-                <div className="p-3 border-b border-gray-100 dark:border-gray-700">
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Parciales</h3>
+              <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 overflow-hidden">
+                <div className="p-3 border-b border-zinc-800/50">
+                  <h3 className="text-sm font-light text-zinc-100 uppercase tracking-wider">Parciales</h3>
                 </div>
                 <div className="max-h-80 overflow-y-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0">
-                      <tr className="text-xs text-gray-500 dark:text-gray-400 uppercase">
-                        <th className="py-2 px-3 text-left font-medium">Km</th>
-                        <th className="py-2 px-3 text-left font-medium">Ritmo</th>
-                        <th className="py-2 px-3 text-left font-medium">Desn.</th>
+                    <thead className="bg-zinc-800/50 sticky top-0">
+                      <tr className="text-xs text-zinc-500 uppercase tracking-wider">
+                        <th className="py-2 px-3 text-left font-normal">Km</th>
+                        <th className="py-2 px-3 text-left font-normal">Ritmo</th>
+                        <th className="py-2 px-3 text-left font-normal">Desn.</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                    <tbody className="divide-y divide-zinc-800/50">
                       {activity.splitsMetric?.map((split, i) => (
                         <tr
                           key={i}
-                          className={`cursor-pointer transition-colors ${hoveredKm === split.split ? 'bg-amber-100 dark:bg-amber-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
+                          className={`cursor-pointer transition-colors ${hoveredKm === split.split ? 'bg-amber-500/10' : 'hover:bg-zinc-800/50'}`}
                           onMouseEnter={() => setHoveredKm(split.split)}
                           onMouseLeave={() => setHoveredKm(null)}
                         >
-                          <td className="py-2 px-3 font-medium text-gray-900 dark:text-white">{split.split}</td>
-                          <td className="py-2 px-3 text-gray-700 dark:text-gray-300">{formatPace(split.average_speed)}<span className="text-gray-400 text-xs">/km</span></td>
-                          <td className={`py-2 px-3 ${split.elevation_difference > 0 ? 'text-red-500' : split.elevation_difference < 0 ? 'text-green-500' : 'text-gray-500'}`}>
+                          <td className="py-2 px-3 font-mono text-zinc-200">{split.split}</td>
+                          <td className="py-2 px-3 font-mono text-zinc-300">{formatPace(split.average_speed)}<span className="text-zinc-600 text-xs">/km</span></td>
+                          <td className={`py-2 px-3 font-mono ${split.elevation_difference > 0 ? 'text-red-400' : split.elevation_difference < 0 ? 'text-emerald-400' : 'text-zinc-500'}`}>
                             {split.elevation_difference > 0 ? '+' : ''}{Math.round(split.elevation_difference)}m
                           </td>
                         </tr>
@@ -574,7 +565,7 @@ export default function ActivityPage() {
 
             {/* Map - Right */}
             {activity.mapPolyline && (
-              <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden ${hasSplits ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
+              <div className={`bg-zinc-900/50 rounded-xl border border-zinc-800/50 overflow-hidden ${hasSplits ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
                 <div className="h-80">
                   <ActivityMap
                     encodedPolyline={activity.mapPolyline}
@@ -593,12 +584,12 @@ export default function ActivityPage() {
 
         {/* Strava-style Chart with Toggles */}
         {isStravaActivity && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 overflow-hidden">
             {/* Chart */}
             <div className="h-48 p-4">
               {loadingStreams ? (
                 <div className="h-full flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+                  <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : sampledData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
@@ -691,23 +682,23 @@ export default function ActivityPage() {
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center text-gray-400 text-sm">
+                <div className="h-full flex items-center justify-center text-zinc-600 text-sm">
                   Sin datos de streaming
                 </div>
               )}
             </div>
 
             {/* Toggle buttons + Stats */}
-            <div className="border-t border-gray-100 dark:border-gray-700 p-4">
+            <div className="border-t border-zinc-800/50 p-4">
               <div className="flex items-center justify-center gap-8">
                 {streams?.velocity_smooth && (
                   <button
                     onClick={() => setShowPace(!showPace)}
                     className="flex flex-col items-center gap-1"
                   >
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Ritmo</span>
-                    <div className={`w-12 h-6 rounded-full transition-colors ${showPace ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
-                      <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform mt-0.5 ${showPace ? 'translate-x-6' : 'translate-x-0.5'}`}></div>
+                    <span className="text-xs text-zinc-500 uppercase tracking-wider">Ritmo</span>
+                    <div className={`w-10 h-5 rounded-full transition-colors ${showPace ? 'bg-blue-500' : 'bg-zinc-700'}`}>
+                      <div className={`w-4 h-4 bg-white rounded-full shadow transform transition-transform mt-0.5 ${showPace ? 'translate-x-5' : 'translate-x-0.5'}`}></div>
                     </div>
                   </button>
                 )}
@@ -716,9 +707,9 @@ export default function ActivityPage() {
                     onClick={() => setShowHeartrate(!showHeartrate)}
                     className="flex flex-col items-center gap-1"
                   >
-                    <span className="text-xs text-gray-500 dark:text-gray-400">FC</span>
-                    <div className={`w-12 h-6 rounded-full transition-colors ${showHeartrate ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
-                      <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform mt-0.5 ${showHeartrate ? 'translate-x-6' : 'translate-x-0.5'}`}></div>
+                    <span className="text-xs text-zinc-500 uppercase tracking-wider">FC</span>
+                    <div className={`w-10 h-5 rounded-full transition-colors ${showHeartrate ? 'bg-red-500' : 'bg-zinc-700'}`}>
+                      <div className={`w-4 h-4 bg-white rounded-full shadow transform transition-transform mt-0.5 ${showHeartrate ? 'translate-x-5' : 'translate-x-0.5'}`}></div>
                     </div>
                   </button>
                 )}
@@ -727,28 +718,28 @@ export default function ActivityPage() {
                     onClick={() => setShowCadence(!showCadence)}
                     className="flex flex-col items-center gap-1"
                   >
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Cadencia</span>
-                    <div className={`w-12 h-6 rounded-full transition-colors ${showCadence ? 'bg-purple-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
-                      <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform mt-0.5 ${showCadence ? 'translate-x-6' : 'translate-x-0.5'}`}></div>
+                    <span className="text-xs text-zinc-500 uppercase tracking-wider">Cadencia</span>
+                    <div className={`w-10 h-5 rounded-full transition-colors ${showCadence ? 'bg-purple-500' : 'bg-zinc-700'}`}>
+                      <div className={`w-4 h-4 bg-white rounded-full shadow transform transition-transform mt-0.5 ${showCadence ? 'translate-x-5' : 'translate-x-0.5'}`}></div>
                     </div>
                   </button>
                 )}
               </div>
-              <div className="flex items-center justify-center gap-12 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+              <div className="flex items-center justify-center gap-12 mt-4 pt-4 border-t border-zinc-800/50">
                 <div className="text-center">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Promedio</p>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-white">{activity.pace || '-'}<span className="text-xs text-gray-400">/km</span></p>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider">Promedio</p>
+                  <p className="text-lg font-mono text-zinc-100">{activity.pace || '-'}<span className="text-xs text-zinc-500">/km</span></p>
                 </div>
                 {activity.heartRate && (
                   <div className="text-center">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">FC Media</p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white">{activity.heartRate}<span className="text-xs text-gray-400"> bpm</span></p>
+                    <p className="text-xs text-zinc-500 uppercase tracking-wider">FC Media</p>
+                    <p className="text-lg font-mono text-zinc-100">{activity.heartRate}<span className="text-xs text-zinc-500"> bpm</span></p>
                   </div>
                 )}
                 {activity.averageCadence && (
                   <div className="text-center">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Cadencia</p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white">{Math.round(activity.averageCadence * 2)}<span className="text-xs text-gray-400"> ppm</span></p>
+                    <p className="text-xs text-zinc-500 uppercase tracking-wider">Cadencia</p>
+                    <p className="text-lg font-mono text-zinc-100">{Math.round(activity.averageCadence * 2)}<span className="text-xs text-zinc-500"> ppm</span></p>
                   </div>
                 )}
               </div>
@@ -761,20 +752,20 @@ export default function ActivityPage() {
           <div className="flex gap-2 overflow-x-auto pb-2">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${
                 activeTab === 'overview'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-zinc-800/50 text-zinc-400 hover:text-zinc-200'
               }`}
             >
               Detalles
             </button>
             <button
               onClick={() => setActiveTab('analysis')}
-              className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${
                 activeTab === 'analysis'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-zinc-800/50 text-zinc-400 hover:text-zinc-200'
               }`}
             >
               Analisis IA
@@ -782,10 +773,10 @@ export default function ActivityPage() {
             {hasLaps && (
               <button
                 onClick={() => setActiveTab('laps')}
-                className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
+                className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${
                   activeTab === 'laps'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-zinc-800/50 text-zinc-400 hover:text-zinc-200'
                 }`}
               >
                 Vueltas ({activity.laps?.length})
@@ -794,10 +785,10 @@ export default function ActivityPage() {
             {hasSegments && (
               <button
                 onClick={() => setActiveTab('segments')}
-                className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
+                className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${
                   activeTab === 'segments'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-zinc-800/50 text-zinc-400 hover:text-zinc-200'
                 }`}
               >
                 Segmentos ({activity.segmentEfforts?.length})
@@ -1112,26 +1103,26 @@ export default function ActivityPage() {
       {/* Chat Button */}
       <button
         onClick={() => setChatOpen(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 z-40"
+        className="fixed bottom-6 right-6 w-12 h-12 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-lg flex items-center justify-center transition-all hover:scale-105 z-40"
       >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
         </svg>
       </button>
 
       {/* Chat Sidebar */}
       {chatOpen && (
-        <div className="fixed inset-y-0 right-0 w-full sm:w-96 bg-white dark:bg-gray-800 shadow-2xl z-50 flex flex-col">
+        <div className="fixed inset-y-0 right-0 w-full sm:w-96 bg-zinc-900 border-l border-zinc-800 shadow-2xl z-50 flex flex-col">
           {/* Header */}
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="p-4 border-b border-zinc-800">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-gray-900 dark:text-white">Chat sobre la actividad</h3>
+              <h3 className="text-sm font-light text-zinc-100 uppercase tracking-wider">Chat</h3>
               <button
                 onClick={() => setChatOpen(false)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
@@ -1139,7 +1130,7 @@ export default function ActivityPage() {
               <select
                 value={chatModel}
                 onChange={(e) => setChatModel(e.target.value)}
-                className="w-full px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-3 py-1.5 text-sm border border-zinc-700 rounded-lg bg-zinc-800 text-zinc-300"
               >
                 {availableModels.map((model) => (
                   <option key={model} value={model}>
@@ -1148,7 +1139,7 @@ export default function ActivityPage() {
                 ))}
               </select>
             ) : (
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-zinc-500">
                 {chatModel.split('/').pop()}
               </p>
             )}
@@ -1158,7 +1149,7 @@ export default function ActivityPage() {
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {chatMessages.length === 0 && (
               <div className="text-center py-8">
-                <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
+                <p className="text-zinc-500 text-sm mb-4">
                   Pregunta sobre tu actividad:
                 </p>
                 <div className="space-y-2">
@@ -1173,7 +1164,7 @@ export default function ActivityPage() {
                       onClick={() => {
                         setChatInput(suggestion);
                       }}
-                      className="block w-full text-left px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-gray-700 dark:text-gray-300 transition-colors"
+                      className="block w-full text-left px-3 py-2 text-sm bg-zinc-800/50 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-200 transition-colors"
                     >
                       {suggestion}
                     </button>
@@ -1187,27 +1178,27 @@ export default function ActivityPage() {
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[85%] px-4 py-2 rounded-2xl ${
+                  className={`max-w-[85%] px-4 py-2 rounded-xl ${
                     msg.role === 'user'
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-zinc-800 text-zinc-200'
                   }`}
                 >
                   {msg.role === 'user' ? (
                     <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                   ) : (
-                    <div className="prose-sm">{renderMarkdown(msg.content)}</div>
+                    <div className="prose-sm text-zinc-300">{renderMarkdown(msg.content)}</div>
                   )}
                 </div>
               </div>
             ))}
             {sendingMessage && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-2xl">
+                <div className="bg-zinc-800 px-4 py-2 rounded-xl">
                   <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                   </div>
                 </div>
               </div>
@@ -1215,7 +1206,7 @@ export default function ActivityPage() {
           </div>
 
           {/* Input */}
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="p-4 border-t border-zinc-800">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -1228,15 +1219,15 @@ export default function ActivityPage() {
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 placeholder="Escribe tu pregunta..."
-                className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="flex-1 px-4 py-2 border border-zinc-700 rounded-lg bg-zinc-800/50 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
               />
               <button
                 type="submit"
                 disabled={!chatInput.trim() || sendingMessage}
-                className="p-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-full transition-colors"
+                className="p-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-30 text-white rounded-lg transition-colors"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
                 </svg>
               </button>
             </form>

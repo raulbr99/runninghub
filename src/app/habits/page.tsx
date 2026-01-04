@@ -204,106 +204,112 @@ export default function HabitsPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
-      <div className="mb-6">
+      <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
-            <span className="text-3xl">🎯</span>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Habitos</h1>
+            <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+              <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+            </div>
+            <h1 className="text-xl font-light text-zinc-100 uppercase tracking-wider">Rutinas</h1>
           </div>
-          <button onClick={() => openModal()} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          <button onClick={() => openModal()} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
             Nuevo
           </button>
         </div>
-        <p className="text-gray-500 dark:text-gray-400">Construye tu rutina diaria</p>
+        <p className="text-sm text-zinc-500">Construye tu rutina diaria</p>
       </div>
 
       {/* Date Selector */}
       <div className="flex items-center justify-center gap-4 mb-6">
-        <button onClick={() => changeDate(-1)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        <button onClick={() => changeDate(-1)} className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
           </svg>
         </button>
         <div className="text-center">
-          <p className="text-lg font-semibold text-gray-900 dark:text-white">
+          <p className="text-lg font-light text-zinc-100">
             {isToday ? 'Hoy' : new Date(selectedDate).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
-          <p className="text-sm text-gray-500">{selectedDate}</p>
+          <p className="text-sm text-zinc-500 font-mono">{selectedDate}</p>
         </div>
-        <button onClick={() => changeDate(1)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" disabled={isToday}>
-          <svg className={`w-5 h-5 ${isToday ? 'opacity-30' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        <button onClick={() => changeDate(1)} className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400" disabled={isToday}>
+          <svg className={`w-5 h-5 ${isToday ? 'opacity-30' : ''}`} fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
           </svg>
         </button>
       </div>
 
       {/* Progress Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Progreso del dia</h2>
-          <span className="text-2xl font-bold text-indigo-600">{completionRate}%</span>
+      <div className="bg-zinc-900/50 rounded-xl p-5 border border-zinc-800/50 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-light text-zinc-100 uppercase tracking-wider">Progreso</h2>
+          <span className="text-xl font-mono text-emerald-400">{completionRate}%</span>
         </div>
-        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
           <div
-            className="h-full bg-indigo-600 rounded-full transition-all duration-500"
+            className="h-full bg-emerald-500 rounded-full transition-all duration-500"
             style={{ width: `${completionRate}%` }}
           />
         </div>
-        <p className="text-sm text-gray-500 mt-2">{completedCount} de {todayHabits.length} habitos completados</p>
+        <p className="text-xs text-zinc-500 mt-2">{completedCount} de {todayHabits.length} completados</p>
       </div>
 
       {/* Habits List */}
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : todayHabits.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 border border-gray-200 dark:border-gray-700 text-center">
-          <p className="text-4xl mb-4">🎯</p>
-          <p className="text-gray-500 dark:text-gray-400 mb-4">No tienes habitos configurados</p>
-          <button onClick={() => openModal()} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium">
-            Crear primer habito
+        <div className="bg-zinc-900/50 rounded-xl p-12 border border-zinc-800/50 text-center">
+          <svg className="w-10 h-10 text-zinc-600 mx-auto mb-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+          </svg>
+          <p className="text-zinc-500 mb-4">No tienes rutinas configuradas</p>
+          <button onClick={() => openModal()} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm">
+            Crear primera rutina
           </button>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {todayHabits.map((habit) => {
             const completed = isHabitCompleted(habit.id);
             return (
               <div
                 key={habit.id}
-                className={`bg-white dark:bg-gray-800 rounded-xl border-2 transition-all ${completed ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-200 dark:border-gray-700'}`}
+                className={`bg-zinc-900/50 rounded-lg border transition-all ${completed ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-zinc-800/50'}`}
               >
                 <div className="p-4 flex items-center gap-4">
                   <button
                     onClick={() => toggleHabit(habit)}
-                    className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all relative ${completed ? 'bg-green-500' : ''}`}
-                    style={{ backgroundColor: completed ? undefined : habit.color + '20', color: completed ? 'white' : habit.color }}
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all relative ${completed ? 'bg-emerald-500' : ''}`}
+                    style={{ backgroundColor: completed ? undefined : habit.color + '15', color: completed ? 'white' : habit.color }}
                   >
                     {completed ? '✓' : habit.icon}
                     {xpAnimation?.habitId === habit.id && (
-                      <span className="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full animate-bounce">
-                        +{xpAnimation.xp} XP
+                      <span className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full animate-bounce">
+                        +{xpAnimation.xp}
                       </span>
                     )}
                   </button>
 
                   <div className="flex-1 min-w-0">
-                    <p className={`font-medium ${completed ? 'text-green-700 dark:text-green-400 line-through' : 'text-gray-900 dark:text-white'}`}>
+                    <p className={`text-sm ${completed ? 'text-emerald-400 line-through' : 'text-zinc-200'}`}>
                       {habit.name}
                     </p>
                     {habit.description && (
-                      <p className="text-sm text-gray-500 truncate">{habit.description}</p>
+                      <p className="text-xs text-zinc-500 truncate">{habit.description}</p>
                     )}
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full">
+                      <span className="text-xs px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 rounded">
                         +{habit.xpReward} XP
                       </span>
                       {habit.frequency === 'specific_days' && habit.specificDays && (
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-zinc-600">
                           {habit.specificDays.map(d => DAYS[d]).join(', ')}
                         </span>
                       )}
@@ -312,10 +318,10 @@ export default function HabitsPage() {
 
                   <button
                     onClick={() => openModal(habit)}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                    className="p-2 hover:bg-zinc-800 rounded-lg"
                   >
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    <svg className="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
                     </svg>
                   </button>
                 </div>
