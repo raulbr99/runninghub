@@ -67,7 +67,7 @@ Devuelve el plan COMPLETO con las modificaciones aplicadas. Mantén la misma est
           { role: 'user', content: userPrompt }
         ],
         temperature: 0.3,
-        max_tokens: 16000,
+        max_tokens: 32000,
         response_format: {
           type: 'json_schema',
           json_schema: {
@@ -130,6 +130,9 @@ Devuelve el plan COMPLETO con las modificaciones aplicadas. Mantén la misma est
     }
 
     const result = await response.json();
+    console.log('Model used:', modelToUse);
+    console.log('Finish reason:', result.choices?.[0]?.finish_reason);
+    console.log('Usage:', JSON.stringify(result.usage));
     const planContent = result.choices?.[0]?.message?.content;
 
     if (!planContent) {
