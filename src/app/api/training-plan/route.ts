@@ -124,7 +124,14 @@ REGLAS DE CONTENIDO:
 5. Ajusta el volumen gradualmente (no mas del 10% semanal)
 6. El dia de tirada larga debe ser siempre el especificado por el usuario`;
 
+    // Fecha de inicio: hoy o el proximo dia disponible
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
     const userPrompt = `Genera un plan de entrenamiento para:
+
+FECHA ACTUAL: ${todayStr}
+IMPORTANTE: El plan debe empezar DESDE HOY o el proximo dia de entrenamiento disponible. NO empieces en 2 semanas.
 
 CARRERA OBJETIVO:
 - Tipo: ${raceNames[data.raceType]} (${raceDistance} km)

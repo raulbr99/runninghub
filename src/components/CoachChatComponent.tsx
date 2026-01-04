@@ -43,7 +43,19 @@ interface WeightEntry {
   muscleMass: number | null;
 }
 
-const buildSystemPrompt = (profile: RunnerProfile | null, latestWeight: WeightEntry | null) => {
+interface CalendarEvent {
+  id: string;
+  date: string;
+  category: string;
+  type: string;
+  title: string | null;
+  time: string | null;
+  duration: number | null;
+  distance: number | null;
+  completed: number;
+}
+
+const buildSystemPrompt = (profile: RunnerProfile | null, latestWeight: WeightEntry | null, calendarEvents: CalendarEvent[] = []) => {
   let basePrompt = `Eres un coach integral experto en running, nutricion y salud. Tu conocimiento incluye:
 
 RUNNING:
@@ -70,13 +82,11 @@ TOOLS DISPONIBLES:
 3. create_running_event - Crea entrenamientos en el calendario
 4. log_weight - Registra el peso del usuario
 5. get_weight_history - Obtiene historial de peso
-6. log_meal - Registra comidas
-7. get_nutrition_summary - Obtiene resumen nutricional del dia
-8. set_nutrition_goals - Establece objetivos nutricionales
+
+IMPORTANTE: Antes de crear un entrenamiento, revisa los eventos existentes en el calendario para evitar duplicados o conflictos de horario.
 
 Usa estas herramientas proactivamente. Por ejemplo:
 - Si dicen "peso 75kg", usa log_weight
-- Si dicen "desayune huevos con tostadas", usa log_meal
 - Si preguntan "que entrenos tengo", usa get_running_events
 - Si dicen "ponme un rodaje de 10km el lunes", usa create_running_event`;
 
@@ -115,6 +125,45 @@ Usa estas herramientas proactivamente. Por ejemplo:
     }
   }
 
+  // Añadir eventos del calendario al contexto
+  if (calendarEvents.length > 0) {
+    const today = new Date().toISOString().split('T')[0];
+    const futureEvents = calendarEvents.filter(e => e.date >= today).slice(0, 30);
+    const pastEvents = calendarEvents.filter(e => e.date < today).slice(-10);
+
+    if (futureEvents.length > 0 || pastEvents.length > 0) {
+      basePrompt += `\n\n--- CALENDARIO DEL USUARIO (eventos existentes) ---`;
+      basePrompt += `\nFecha actual: ${today}`;
+
+      if (futureEvents.length > 0) {
+        basePrompt += `\n\nPROXIMOS EVENTOS:`;
+        for (const event of futureEvents) {
+          const info = [`${event.date}: ${event.type}`];
+          if (event.title) info.push(`"${event.title}"`);
+          if (event.distance) info.push(`${event.distance}km`);
+          if (event.duration) info.push(`${event.duration}min`);
+          if (event.time) info.push(`a las ${event.time}`);
+          info.push(event.completed ? '(completado)' : '(pendiente)');
+          basePrompt += `\n- ${info.join(' ')}`;
+        }
+      }
+
+      if (pastEvents.length > 0) {
+        basePrompt += `\n\nULTIMOS ENTRENAMIENTOS:`;
+        for (const event of pastEvents) {
+          const info = [`${event.date}: ${event.type}`];
+          if (event.title) info.push(`"${event.title}"`);
+          if (event.distance) info.push(`${event.distance}km`);
+          if (event.duration) info.push(`${event.duration}min`);
+          info.push(event.completed ? '(completado)' : '(no completado)');
+          basePrompt += `\n- ${info.join(' ')}`;
+        }
+      }
+
+      basePrompt += `\n--- FIN CALENDARIO ---`;
+    }
+  }
+
   return basePrompt;
 };
 
@@ -137,6 +186,7 @@ export default function CoachChatComponent({ conversationId, onConversationCreat
   const [showProfile, setShowProfile] = useState(false);
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
   const [latestWeight, setLatestWeight] = useState<WeightEntry | null>(null);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -146,6 +196,7 @@ export default function CoachChatComponent({ conversationId, onConversationCreat
     loadProfile();
     loadSettings();
     loadLatestWeight();
+    loadCalendarEvents();
   }, []);
 
   const loadSettings = async () => {
