@@ -159,7 +159,7 @@ function SettingsContent() {
   const toggleModel = (modelId: string) => {
     setSelectedModels(prev => {
       if (prev.includes(modelId)) {
-        if (prev.length === 1) return prev; // Keep at least one
+        if (prev.length === 1) return prev;
         return prev.filter(id => id !== modelId);
       }
       return [...prev, modelId];
@@ -232,112 +232,116 @@ function SettingsContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+        <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
-      <div className="mb-6">
+      {/* Header */}
+      <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <span className="text-3xl">&#9881;</span>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Configuracion</h1>
+          <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+            <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+            </svg>
+          </div>
+          <h1 className="text-xl font-light text-zinc-100 uppercase tracking-wider">Configuracion</h1>
         </div>
-        <p className="text-gray-500 dark:text-gray-400">Personaliza tu experiencia en RunningHub</p>
+        <p className="text-sm text-zinc-500">Personaliza tu experiencia</p>
       </div>
 
       {message && (
-        <div className={`mb-6 p-4 rounded-xl ${message.type === 'success' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'}`}>
+        <div className={`mb-6 p-4 rounded-xl text-sm ${message.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border border-red-500/30 text-red-400'}`}>
           {message.text}
         </div>
       )}
 
       {/* Strava */}
-      <div className="mb-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="#FC4C02">
+      <div className="mb-6 bg-zinc-900/50 rounded-xl border border-zinc-800/50 overflow-hidden">
+        <div className="p-4 border-b border-zinc-800/50">
+          <h2 className="text-sm font-light text-zinc-100 uppercase tracking-wider flex items-center gap-2">
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#FC4C02">
               <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/>
             </svg>
             Strava
           </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-xs text-zinc-500 mt-1">
             Sincroniza tus entrenamientos automaticamente
           </p>
         </div>
         <div className="p-4">
           {stravaLoading ? (
             <div className="flex justify-center py-4">
-              <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : stravaStatus?.connected ? (
             <div className="space-y-4">
-              <div className="flex items-center gap-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
+              <div className="flex items-center gap-4 p-4 bg-orange-500/10 rounded-xl border border-orange-500/20">
                 {stravaStatus.athlete?.profile && (
                   <img
                     src={stravaStatus.athlete.profile}
                     alt="Profile"
-                    className="w-12 h-12 rounded-full"
+                    className="w-10 h-10 rounded-full"
                   />
                 )}
                 <div className="flex-1">
-                  <p className="font-medium text-gray-900 dark:text-white">
+                  <p className="text-sm font-medium text-zinc-100">
                     {stravaStatus.athlete?.name || 'Atleta'}
                   </p>
-                  <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  <p className="text-xs text-emerald-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
                     Conectado
                   </p>
                 </div>
                 <button
                   onClick={disconnectStrava}
-                  className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                 >
                   Desconectar
                 </button>
               </div>
 
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={syncStrava}
-                  disabled={stravaSyncing}
-                  className="flex-1 px-4 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-colors"
-                >
-                  {stravaSyncing ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Sincronizando...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      Sincronizar actividades
-                    </>
-                  )}
-                </button>
-              </div>
+              <button
+                onClick={syncStrava}
+                disabled={stravaSyncing}
+                className="w-full px-4 py-3 bg-orange-600 hover:bg-orange-500 disabled:bg-orange-600/50 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors"
+              >
+                {stravaSyncing ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Sincronizando...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                    Sincronizar actividades
+                  </>
+                )}
+              </button>
 
               {syncResult && (
-                <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm text-gray-600 dark:text-gray-300">
-                  <span className="font-medium">{syncResult.imported}</span> importadas,{' '}
-                  <span className="font-medium">{syncResult.skipped}</span> ya existian
+                <div className="p-3 bg-zinc-800/50 rounded-lg text-xs text-zinc-400 font-mono">
+                  <span className="text-zinc-200">{syncResult.imported}</span> importadas,{' '}
+                  <span className="text-zinc-200">{syncResult.skipped}</span> ya existian
                 </div>
               )}
             </div>
           ) : (
             <div className="text-center py-4">
-              <p className="text-gray-500 dark:text-gray-400 mb-4">
-                Conecta tu cuenta de Strava para importar tus entrenamientos automaticamente
+              <p className="text-zinc-500 text-sm mb-4">
+                Conecta tu cuenta de Strava para importar actividades
               </p>
               <button
                 onClick={connectStrava}
-                className="px-6 py-3 bg-[#FC4C02] hover:bg-[#e04400] text-white rounded-xl font-medium flex items-center gap-2 mx-auto transition-colors"
+                className="px-6 py-3 bg-[#FC4C02] hover:bg-[#e04400] text-white rounded-lg text-sm font-medium flex items-center gap-2 mx-auto transition-colors"
               >
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/>
                 </svg>
                 Conectar con Strava
@@ -349,9 +353,9 @@ function SettingsContent() {
 
       {/* Modelos seleccionados */}
       {selectedModels.length > 0 && (
-        <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
-          <p className="text-sm font-medium text-green-800 dark:text-green-200 mb-2">
-            {selectedModels.length} modelo(s) seleccionado(s) para el chat:
+        <div className="mb-6 p-4 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+          <p className="text-xs font-medium text-emerald-400 mb-2 uppercase tracking-wider">
+            {selectedModels.length} modelo(s) seleccionado(s):
           </p>
           <div className="flex flex-wrap gap-2">
             {selectedModels.map(modelId => {
@@ -359,15 +363,17 @@ function SettingsContent() {
               return (
                 <span
                   key={modelId}
-                  className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200 rounded-lg text-sm"
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-500/20 text-emerald-300 rounded-lg text-xs"
                 >
                   {model?.name || modelId.split('/').pop()}
                   <button
                     onClick={() => toggleModel(modelId)}
-                    className="ml-1 hover:text-red-500"
+                    className="ml-1 hover:text-red-400"
                     disabled={selectedModels.length === 1}
                   >
-                    &#10005;
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
                   </button>
                 </span>
               );
@@ -376,13 +382,17 @@ function SettingsContent() {
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <span>&#129302;</span> Modelos de IA para el Coach
+      {/* Modelos IA */}
+      <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 overflow-hidden">
+        <div className="p-4 border-b border-zinc-800/50">
+          <h2 className="text-sm font-light text-zinc-100 uppercase tracking-wider flex items-center gap-2">
+            <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+            </svg>
+            Modelos IA
           </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {loadingModels ? 'Cargando modelos...' : `Selecciona los modelos que quieres usar (${allModels.length} disponibles)`}
+          <p className="text-xs text-zinc-500 mt-1">
+            {loadingModels ? 'Cargando...' : `${allModels.length} modelos disponibles`}
           </p>
         </div>
 
@@ -390,15 +400,15 @@ function SettingsContent() {
           {/* Buscador */}
           <div className="mb-4">
             <div className="relative">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
               </svg>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar modelo..."
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full pl-10 pr-4 py-2.5 border border-zinc-700/50 rounded-lg bg-zinc-800/50 text-zinc-100 placeholder-zinc-600 text-sm focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50"
               />
             </div>
           </div>
@@ -407,21 +417,21 @@ function SettingsContent() {
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <button
               onClick={() => setShowFreeOnly(!showFreeOnly)}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+              className={`px-3 py-1.5 text-xs rounded-lg transition-colors uppercase tracking-wider ${
                 showFreeOnly
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800 border border-zinc-700/50'
               }`}
             >
               Solo gratis
             </button>
-            <span className="text-gray-300 dark:text-gray-600">|</span>
+            <span className="text-zinc-700">|</span>
             <button
               onClick={() => setFilterProvider(null)}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+              className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
                 filterProvider === null
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800 border border-zinc-700/50'
               }`}
             >
               Todos
@@ -430,10 +440,10 @@ function SettingsContent() {
               <button
                 key={provider}
                 onClick={() => setFilterProvider(provider)}
-                className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
                   filterProvider === provider
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800 border border-zinc-700/50'
                 }`}
               >
                 {provider}
@@ -444,12 +454,12 @@ function SettingsContent() {
           {/* Lista de modelos */}
           {loadingModels ? (
             <div className="flex justify-center py-12">
-              <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
             <>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                Mostrando {filteredModels.length} modelos
+              <p className="text-xs text-zinc-500 mb-2 font-mono">
+                {filteredModels.length} modelos
               </p>
               <div className="space-y-2 max-h-[500px] overflow-y-auto">
                 {filteredModels.map((model) => {
@@ -460,42 +470,41 @@ function SettingsContent() {
                     <div
                       key={model.id}
                       onClick={() => toggleModel(model.id)}
-                      className={`flex items-start gap-4 p-4 rounded-xl cursor-pointer transition-all ${
+                      className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all ${
                         isSelected
-                          ? 'bg-green-100 dark:bg-green-900/30 border-2 border-green-500'
-                          : 'bg-gray-50 dark:bg-gray-700/50 border-2 border-transparent hover:bg-gray-100 dark:hover:bg-gray-700'
+                          ? 'bg-emerald-500/10 border border-emerald-500/30'
+                          : 'bg-zinc-800/30 border border-zinc-700/30 hover:bg-zinc-800/50'
                       }`}
                     >
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleModel(model.id)}
-                        className="w-5 h-5 mt-1 text-green-600 rounded focus:ring-green-500"
+                        className="w-4 h-4 mt-0.5 text-emerald-600 rounded bg-zinc-700 border-zinc-600 focus:ring-emerald-500"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-medium text-gray-900 dark:text-white">{model.name}</p>
-                          <span className="px-2 py-0.5 text-xs rounded-full bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300">
+                          <p className="text-sm font-medium text-zinc-100">{model.name}</p>
+                          <span className="px-1.5 py-0.5 text-xs rounded bg-zinc-700 text-zinc-400">
                             {provider}
                           </span>
                           {isFree && (
-                            <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300">
+                            <span className="px-1.5 py-0.5 text-xs rounded bg-emerald-500/20 text-emerald-400">
                               Gratis
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-gray-400 mt-0.5 font-mono truncate">{model.id}</p>
+                        <p className="text-xs text-zinc-600 mt-0.5 font-mono truncate">{model.id}</p>
                         {model.description && (
-                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{model.description}</p>
+                          <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{model.description}</p>
                         )}
-                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
-                          <span title="Contexto">&#128196; {formatContextLength(model.context_length)}</span>
-                          <span title="Precio input">&#8593; {formatPrice(model.pricing.prompt)}</span>
-                          <span title="Precio output">&#8595; {formatPrice(model.pricing.completion)}</span>
+                        <div className="flex items-center gap-4 mt-2 text-xs text-zinc-500 font-mono">
+                          <span>{formatContextLength(model.context_length)} ctx</span>
+                          <span>{formatPrice(model.pricing.prompt)}</span>
                         </div>
                       </div>
                       {isSelected && (
-                        <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-4 h-4 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       )}
@@ -507,21 +516,21 @@ function SettingsContent() {
           )}
         </div>
 
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+        <div className="p-4 border-t border-zinc-800/50 flex justify-end">
           <button
             onClick={saveSettings}
             disabled={saving || selectedModels.length === 0}
-            className="px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-xl font-medium flex items-center gap-2 transition-colors"
+            className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-600/50 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
           >
             {saving ? (
               <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 Guardando...
               </>
             ) : (
               <>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                 </svg>
                 Guardar ({selectedModels.length})
               </>
@@ -530,15 +539,16 @@ function SettingsContent() {
         </div>
       </div>
 
-      {/* Info adicional */}
-      <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+      {/* Info */}
+      <div className="mt-6 p-4 bg-blue-500/10 rounded-xl border border-blue-500/20">
         <div className="flex gap-3">
-          <span className="text-xl">&#128161;</span>
+          <svg className="w-5 h-5 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+          </svg>
           <div>
-            <p className="font-medium text-blue-900 dark:text-blue-200">Seleccion multiple</p>
-            <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-              Puedes seleccionar varios modelos y cambiar entre ellos en el chat usando el dropdown.
-              Los modelos gratuitos tienen limites de uso.
+            <p className="text-sm font-medium text-blue-300">Seleccion multiple</p>
+            <p className="text-xs text-blue-400/70 mt-1">
+              Puedes seleccionar varios modelos y cambiar entre ellos en el chat.
             </p>
           </div>
         </div>
@@ -550,8 +560,8 @@ function SettingsContent() {
 export default function SettingsPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+        <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
       </div>
     }>
       <SettingsContent />
