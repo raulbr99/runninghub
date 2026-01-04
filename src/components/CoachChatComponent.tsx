@@ -251,6 +251,27 @@ export default function CoachChatComponent({ conversationId, onConversationCreat
     }
   };
 
+  const loadCalendarEvents = async () => {
+    try {
+      // Cargar eventos de los ultimos 30 dias y proximos 60 dias
+      const today = new Date();
+      const startDate = new Date(today);
+      startDate.setDate(startDate.getDate() - 30);
+      const endDate = new Date(today);
+      endDate.setDate(endDate.getDate() + 60);
+
+      const res = await fetch(`/api/running-events?startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setCalendarEvents(data);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading calendar events:', error);
+    }
+  };
+
   const loadConversations = async () => {
     try {
       const res = await fetch('/api/conversations');
@@ -339,7 +360,7 @@ export default function CoachChatComponent({ conversationId, onConversationCreat
     if (convId) await saveMessage(convId, 'user', input || 'Imagen adjunta');
 
     try {
-      const systemPrompt = buildSystemPrompt(profile, latestWeight);
+      const systemPrompt = buildSystemPrompt(profile, latestWeight, calendarEvents);
 
       // Build messages with image support
       const apiMessages = [
@@ -396,6 +417,7 @@ export default function CoachChatComponent({ conversationId, onConversationCreat
             }
             if (parsed.profileSaved) loadProfile();
             if (parsed.weightLogged) loadLatestWeight();
+            if (parsed.eventCreated) loadCalendarEvents();
           } catch { /* ignore */ }
         }
       }
