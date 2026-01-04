@@ -271,27 +271,6 @@ export default function CoachChatComponent({ conversationId, onConversationCreat
     }
   };
 
-  const loadCalendarEvents = async () => {
-    try {
-      // Cargar eventos de los ultimos 30 dias y proximos 60 dias
-      const today = new Date();
-      const startDate = new Date(today);
-      startDate.setDate(startDate.getDate() - 30);
-      const endDate = new Date(today);
-      endDate.setDate(endDate.getDate() + 60);
-
-      const res = await fetch(`/api/running-events?startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setCalendarEvents(data);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading calendar events:', error);
-    }
-  };
-
   const loadConversations = async () => {
     try {
       const res = await fetch('/api/conversations');
