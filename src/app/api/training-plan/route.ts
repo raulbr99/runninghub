@@ -110,15 +110,19 @@ export async function POST(request: NextRequest) {
     const systemPrompt = `Eres un entrenador de running profesional con experiencia en preparacion de atletas para carreras.
 Genera planes de entrenamiento personalizados, periodizados y realistas.
 
-REGLAS IMPORTANTES:
-1. Responde UNICAMENTE con un JSON valido, sin texto adicional
-2. El JSON debe seguir exactamente la estructura especificada
-3. Las fechas deben estar en formato YYYY-MM-DD
-4. Los tipos de entrenamiento validos son: easy, tempo, intervals, fartlek, long, recovery, race, strength, rest
-5. Usa periodizacion inteligente: base -> build -> peak -> taper
-6. Incluye semanas de descarga cada 3-4 semanas
-7. Ajusta el volumen gradualmente (no mas del 10% semanal)
-8. El dia de tirada larga debe ser siempre el especificado por el usuario`;
+REGLAS CRITICAS DE FORMATO:
+1. Responde SOLO con JSON puro, sin bloques de codigo markdown (NO uses \`\`\`json)
+2. El JSON debe ser valido y parseable directamente
+3. NO incluyas texto antes o despues del JSON
+4. Verifica que todas las comas y llaves esten correctas
+
+REGLAS DE CONTENIDO:
+1. Las fechas deben estar en formato YYYY-MM-DD
+2. Los tipos de entrenamiento validos son: easy, tempo, intervals, fartlek, long, recovery, race, strength, rest
+3. Usa periodizacion inteligente: base -> build -> peak -> taper
+4. Incluye semanas de descarga cada 3-4 semanas
+5. Ajusta el volumen gradualmente (no mas del 10% semanal)
+6. El dia de tirada larga debe ser siempre el especificado por el usuario`;
 
     const userPrompt = `Genera un plan de entrenamiento para:
 
@@ -207,13 +211,28 @@ Genera el plan completo con TODOS los entrenamientos de las ${weeks} semanas.`;
     }
 
     try {
-      const plan = JSON.parse(planContent);
+      // Limpiar el contenido: quitar bloques de markdown si existen
+      let cleanContent = planContent.trim();
+
+      // Quitar ```json al inicio y ``` al final
+      if (cleanContent.startsWith('```json')) {
+        cleanContent = cleanContent.slice(7);
+      } else if (cleanContent.startsWith('```')) {
+        cleanContent = cleanContent.slice(3);
+      }
+      if (cleanContent.endsWith('```')) {
+        cleanContent = cleanContent.slice(0, -3);
+      }
+      cleanContent = cleanContent.trim();
+
+      const plan = JSON.parse(cleanContent);
       return new Response(JSON.stringify(plan), {
         headers: { 'Content-Type': 'application/json' }
       });
-    } catch {
+    } catch (parseError) {
       console.error('Error parsing plan JSON:', planContent);
-      return new Response(JSON.stringify({ error: 'Error al procesar el plan generado' }), {
+      console.error('Parse error:', parseError);
+      return new Response(JSON.stringify({ error: 'Error al procesar el plan. El modelo genero JSON invalido. Intenta de nuevo o cambia el modelo en Configuracion.' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       });
