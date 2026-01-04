@@ -107,7 +107,7 @@ Devuelve el plan COMPLETO con las modificaciones aplicadas. Mantén la misma est
                       duration: { type: 'number' },
                       notes: { type: 'string' }
                     },
-                    required: ['date', 'type', 'title', 'duration', 'notes'],
+                    required: ['date', 'type', 'title', 'distance', 'duration', 'notes'],
                     additionalProperties: false
                   }
                 }

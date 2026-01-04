@@ -234,7 +234,7 @@ Genera el plan completo con TODOS los entrenamientos de las ${weeks} semanas.`;
                       duration: { type: 'number' },
                       notes: { type: 'string' }
                     },
-                    required: ['date', 'type', 'title', 'duration', 'notes'],
+                    required: ['date', 'type', 'title', 'distance', 'duration', 'notes'],
                     additionalProperties: false
                   }
                 }
