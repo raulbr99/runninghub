@@ -191,6 +191,26 @@ export default function CoachChatComponent({ conversationId, onConversationCreat
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const loadCalendarEvents = async () => {
+    try {
+      const today = new Date();
+      const startDate = new Date(today);
+      startDate.setDate(startDate.getDate() - 30);
+      const endDate = new Date(today);
+      endDate.setDate(endDate.getDate() + 60);
+
+      const res = await fetch(`/api/running-events?startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setCalendarEvents(data);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading calendar events:', error);
+    }
+  };
+
   useEffect(() => {
     loadConversations();
     loadProfile();
