@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "RunningHub",
-  description: "Tu coach integral de running, salud y nutricion",
+  description: "Centro de control para corredores",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -46,7 +46,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 dark:bg-gray-950`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-950 text-zinc-100`}
       >
         <Sidebar />
         <main className="md:ml-64 min-h-screen">
