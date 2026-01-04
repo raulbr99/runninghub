@@ -198,7 +198,7 @@ Genera el plan completo con TODOS los entrenamientos de las ${weeks} semanas.`;
           type: 'json_schema',
           json_schema: {
             name: 'training_plan',
-            strict: true,
+            strict: false,
             schema: {
               type: 'object',
               properties: {

@@ -72,7 +72,7 @@ Devuelve el plan COMPLETO con las modificaciones aplicadas. Mantén la misma est
           type: 'json_schema',
           json_schema: {
             name: 'training_plan',
-            strict: true,
+            strict: false,
             schema: {
               type: 'object',
               properties: {
