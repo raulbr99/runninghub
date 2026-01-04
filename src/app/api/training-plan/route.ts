@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { runnerProfile } from '@/lib/db/schema';
+import { runnerProfile, appSettings } from '@/lib/db/schema';
 
 interface PlanRequest {
   raceType: '5k' | '10k' | 'half_marathon' | 'marathon' | 'trail' | 'ultra';
@@ -80,6 +80,10 @@ export async function POST(request: NextRequest) {
     // Obtener perfil del usuario para personalizar
     const profiles = await db.select().from(runnerProfile).limit(1);
     const profile = profiles[0] || null;
+
+    // Obtener modelo configurado
+    const settings = await db.select().from(appSettings).limit(1);
+    const modelToUse = settings[0]?.trainingPlanModel || 'openai/gpt-4o';
 
     // Construir el prompt
     const availableDayNames = data.availableDays.map(d => getDayName(d)).join(', ');
@@ -172,14 +176,14 @@ Genera el plan completo con TODOS los entrenamientos de las ${weeks} semanas.`;
         'X-Title': 'RunningHub Training Plan',
       },
       body: JSON.stringify({
-        model: 'openai/gpt-4o',
+        model: modelToUse,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
         temperature: 0.3,
         max_tokens: 16000,
-        response_format: { type: 'json_object' },
+        ...(modelToUse.startsWith('openai/') ? { response_format: { type: 'json_object' } } : {}),
       }),
     });
 

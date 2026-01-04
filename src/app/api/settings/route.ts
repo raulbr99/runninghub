@@ -14,6 +14,7 @@ export async function GET() {
         .values({
           selectedModel: 'openai/gpt-4o',
           selectedModels: DEFAULT_MODELS,
+          trainingPlanModel: 'openai/gpt-4o',
         })
         .returning();
       return NextResponse.json(newSettings);
@@ -24,6 +25,7 @@ export async function GET() {
     return NextResponse.json({
       selectedModel: 'openai/gpt-4o',
       selectedModels: DEFAULT_MODELS,
+      trainingPlanModel: 'openai/gpt-4o',
     });
   }
 }
@@ -35,6 +37,7 @@ export async function PUT(request: NextRequest) {
 
     const selectedModels = body.selectedModels || DEFAULT_MODELS;
     const selectedModel = body.selectedModel || selectedModels[0] || 'openai/gpt-4o';
+    const trainingPlanModel = body.trainingPlanModel;
 
     if (existing.length === 0) {
       const [newSettings] = await db
@@ -42,18 +45,25 @@ export async function PUT(request: NextRequest) {
         .values({
           selectedModel,
           selectedModels,
+          trainingPlanModel: trainingPlanModel || 'openai/gpt-4o',
         })
         .returning();
       return NextResponse.json(newSettings);
     }
 
+    const updateData: Record<string, unknown> = {
+      selectedModel,
+      selectedModels,
+      updatedAt: new Date(),
+    };
+
+    if (trainingPlanModel !== undefined) {
+      updateData.trainingPlanModel = trainingPlanModel;
+    }
+
     const [updated] = await db
       .update(appSettings)
-      .set({
-        selectedModel,
-        selectedModels,
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(appSettings.id, existing[0].id))
       .returning();
 

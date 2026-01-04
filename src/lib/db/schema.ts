@@ -260,6 +260,7 @@ export const appSettings = pgTable('app_settings', {
   id: uuid('id').primaryKey().defaultRandom(),
   selectedModel: text('selected_model').default('openai/gpt-4o').notNull(),
   selectedModels: jsonb('selected_models').$type<string[]>().default(['openai/gpt-4o']).notNull(),
+  trainingPlanModel: text('training_plan_model').default('openai/gpt-4o'),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
