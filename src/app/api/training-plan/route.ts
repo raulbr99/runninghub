@@ -288,7 +288,10 @@ Genera el plan completo con TODOS los entrenamientos de las ${weeks} semanas.`;
     } catch (parseError) {
       console.error('Error parsing plan JSON:', planContent);
       console.error('Parse error:', parseError);
-      return new Response(JSON.stringify({ error: 'Error al procesar el plan. El modelo genero JSON invalido. Intenta de nuevo o cambia el modelo en Configuracion.' }), {
+      console.error('Model used:', modelToUse);
+      return new Response(JSON.stringify({
+        error: `El modelo ${modelToUse} genero JSON invalido. Prueba con openai/gpt-4o que tiene mejor soporte para structured outputs.`
+      }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       });

@@ -155,9 +155,13 @@ Devuelve el plan COMPLETO con las modificaciones aplicadas. Mantén la misma est
       return new Response(JSON.stringify(updatedPlan), {
         headers: { 'Content-Type': 'application/json' }
       });
-    } catch {
+    } catch (parseError) {
       console.error('Error parsing edited plan JSON:', planContent);
-      return new Response(JSON.stringify({ error: 'Error al procesar la edicion' }), {
+      console.error('Parse error:', parseError);
+      console.error('Model used:', modelToUse);
+      return new Response(JSON.stringify({
+        error: `El modelo ${modelToUse} genero JSON invalido. Prueba con openai/gpt-4o que tiene mejor soporte para structured outputs.`
+      }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       });
