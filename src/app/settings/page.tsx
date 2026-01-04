@@ -50,6 +50,11 @@ function SettingsContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFreeOnly, setShowFreeOnly] = useState(false);
 
+  // Filtros para plan de entrenamiento
+  const [planFilterProvider, setPlanFilterProvider] = useState<string | null>(null);
+  const [planSearchQuery, setPlanSearchQuery] = useState('');
+  const [planShowFreeOnly, setPlanShowFreeOnly] = useState(false);
+
   // Strava
   const [stravaStatus, setStravaStatus] = useState<StravaStatus | null>(null);
   const [stravaLoading, setStravaLoading] = useState(true);
@@ -222,6 +227,19 @@ function SettingsContent() {
     });
   }, [allModels, filterProvider, searchQuery, showFreeOnly]);
 
+  const filteredPlanModels = useMemo(() => {
+    return allModels.filter(m => {
+      const provider = m.id.split('/')[0];
+      const matchesProvider = !planFilterProvider || provider === planFilterProvider;
+      const matchesSearch = !planSearchQuery ||
+        m.name.toLowerCase().includes(planSearchQuery.toLowerCase()) ||
+        m.id.toLowerCase().includes(planSearchQuery.toLowerCase());
+      const isFree = parseFloat(m.pricing.prompt) === 0;
+      const matchesFree = !planShowFreeOnly || isFree;
+      return matchesProvider && matchesSearch && matchesFree;
+    });
+  }, [allModels, planFilterProvider, planSearchQuery, planShowFreeOnly]);
+
   const formatPrice = (price: string) => {
     const num = parseFloat(price);
     if (num === 0) return 'Gratis';
@@ -368,31 +386,132 @@ function SettingsContent() {
             Modelo IA para generar planes de entrenamiento personalizados
           </p>
         </div>
+
+        {/* Modelo seleccionado */}
+        {trainingPlanModel && (
+          <div className="px-4 pt-4">
+            <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+              <p className="text-xs font-medium text-emerald-400 mb-1 uppercase tracking-wider">Modelo seleccionado:</p>
+              <p className="text-sm text-emerald-300 font-mono">{allModels.find(m => m.id === trainingPlanModel)?.name || trainingPlanModel}</p>
+            </div>
+          </div>
+        )}
+
         <div className="p-4">
+          {/* Buscador */}
+          <div className="mb-4">
+            <div className="relative">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+              </svg>
+              <input
+                type="text"
+                value={planSearchQuery}
+                onChange={(e) => setPlanSearchQuery(e.target.value)}
+                placeholder="Buscar modelo..."
+                className="w-full pl-10 pr-4 py-2.5 border border-zinc-700/50 rounded-lg bg-zinc-800/50 text-zinc-100 placeholder-zinc-600 text-sm focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50"
+              />
+            </div>
+          </div>
+
+          {/* Filtros */}
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setPlanShowFreeOnly(!planShowFreeOnly)}
+              className={`px-3 py-1.5 text-xs rounded-lg transition-colors uppercase tracking-wider ${
+                planShowFreeOnly
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800 border border-zinc-700/50'
+              }`}
+            >
+              Solo gratis
+            </button>
+            <span className="text-zinc-700">|</span>
+            <button
+              onClick={() => setPlanFilterProvider(null)}
+              className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                planFilterProvider === null
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800 border border-zinc-700/50'
+              }`}
+            >
+              Todos
+            </button>
+            {providers.slice(0, 10).map((provider) => (
+              <button
+                key={provider}
+                onClick={() => setPlanFilterProvider(provider)}
+                className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                  planFilterProvider === provider
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800 border border-zinc-700/50'
+                }`}
+              >
+                {provider}
+              </button>
+            ))}
+          </div>
+
+          {/* Lista de modelos */}
           {loadingModels ? (
-            <div className="flex justify-center py-4">
+            <div className="flex justify-center py-12">
               <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
-            <div className="space-y-3">
-              <select
-                value={trainingPlanModel}
-                onChange={(e) => setTrainingPlanModel(e.target.value)}
-                className="w-full px-4 py-3 border border-zinc-700/50 rounded-lg bg-zinc-800/50 text-zinc-100 text-sm focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50"
-              >
-                {allModels.slice(0, 100).map((model) => {
+            <>
+              <p className="text-xs text-zinc-500 mb-2 font-mono">
+                {filteredPlanModels.length} modelos
+              </p>
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                {filteredPlanModels.map((model) => {
+                  const provider = model.id.split('/')[0];
                   const isFree = parseFloat(model.pricing.prompt) === 0;
+                  const isSelected = trainingPlanModel === model.id;
                   return (
-                    <option key={model.id} value={model.id}>
-                      {model.name} {isFree ? '(Gratis)' : `($${(parseFloat(model.pricing.prompt) * 1000000).toFixed(2)}/1M)`}
-                    </option>
+                    <div
+                      key={model.id}
+                      onClick={() => setTrainingPlanModel(model.id)}
+                      className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                        isSelected
+                          ? 'bg-emerald-500/10 border border-emerald-500/30'
+                          : 'bg-zinc-800/30 border border-zinc-700/30 hover:bg-zinc-800/50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="trainingPlanModel"
+                        checked={isSelected}
+                        onChange={() => setTrainingPlanModel(model.id)}
+                        className="w-4 h-4 mt-0.5 text-emerald-600 bg-zinc-700 border-zinc-600 focus:ring-emerald-500"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-medium text-zinc-100">{model.name}</p>
+                          <span className="px-1.5 py-0.5 text-xs rounded bg-zinc-700 text-zinc-400">
+                            {provider}
+                          </span>
+                          {isFree && (
+                            <span className="px-1.5 py-0.5 text-xs rounded bg-emerald-500/20 text-emerald-400">
+                              Gratis
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-zinc-600 mt-0.5 font-mono truncate">{model.id}</p>
+                        <div className="flex items-center gap-4 mt-2 text-xs text-zinc-500 font-mono">
+                          <span>{formatContextLength(model.context_length)} ctx</span>
+                          <span>{formatPrice(model.pricing.prompt)}</span>
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <svg className="w-4 h-4 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
                   );
                 })}
-              </select>
-              <p className="text-xs text-zinc-500">
-                Modelo actual: <span className="text-emerald-400 font-mono">{trainingPlanModel}</span>
-              </p>
-            </div>
+              </div>
+            </>
           )}
         </div>
       </div>
