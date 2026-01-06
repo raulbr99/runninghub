@@ -68,7 +68,7 @@ interface TrainingHistory {
   tsb: number;
 }
 
-async function getTrainingHistory(): Promise<TrainingHistory | null> {
+async function getTrainingHistory(thresholdPace: number = 5): Promise<TrainingHistory | null> {
   try {
     // Obtener entrenamientos de las últimas 6 semanas
     const sixWeeksAgo = new Date();
@@ -147,8 +147,7 @@ async function getTrainingHistory(): Promise<TrainingHistory | null> {
     events.forEach((event) => {
       if (event.duration && event.distance) {
         const pace = event.duration / event.distance;
-        const threshold = 5;
-        let intensityFactor = threshold / pace;
+        let intensityFactor = thresholdPace / pace;
 
         const typeMultipliers: Record<string, number> = {
           easy: 0.7, recovery: 0.6, long: 0.75,
@@ -225,9 +224,10 @@ export async function POST(request: NextRequest) {
     // Obtener perfil del usuario para personalizar
     const profiles = await db.select().from(runnerProfile).limit(1);
     const profile = profiles[0] || null;
+    const userThreshold = profile?.thresholdPace || 5;
 
     // Obtener historial de entrenamientos recientes
-    const trainingHistory = await getTrainingHistory();
+    const trainingHistory = await getTrainingHistory(userThreshold);
 
     // Obtener modelo configurado
     const settings = await db.select().from(appSettings).limit(1);

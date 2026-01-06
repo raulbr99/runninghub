@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { calendarEvents } from '@/lib/db/schema';
+import { calendarEvents, runnerProfile } from '@/lib/db/schema';
 import { gte, eq, and, desc } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
@@ -58,8 +58,9 @@ function calculateEWMA(values: number[], halfLife: number): number {
 
 export async function GET() {
   try {
-    // Umbral por defecto de 5 min/km
-    const thresholdPace = 5;
+    // Obtener umbral del perfil del usuario
+    const profiles = await db.select().from(runnerProfile).limit(1);
+    const thresholdPace = profiles[0]?.thresholdPace || 5; // Default 5:00/km
 
     // Obtener entrenamientos de los últimos 90 días
     const ninetyDaysAgo = new Date();

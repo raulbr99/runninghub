@@ -35,6 +35,7 @@ interface RunnerProfile {
   height: number | null;
   yearsRunning: number | null;
   weeklyKm: number | null;
+  thresholdPace: number | null;
   pb5k: string | null;
   pb10k: string | null;
   pbHalfMarathon: string | null;
@@ -64,6 +65,7 @@ export default function ProfilePage() {
     height: '',
     yearsRunning: '',
     weeklyKm: '',
+    thresholdPace: '',
     pb5k: '',
     pb10k: '',
     pbHalfMarathon: '',
@@ -109,6 +111,7 @@ export default function ProfilePage() {
             height: data.height?.toString() || '',
             yearsRunning: data.yearsRunning?.toString() || '',
             weeklyKm: data.weeklyKm?.toString() || '',
+            thresholdPace: data.thresholdPace?.toString() || '',
             pb5k: data.pb5k || '',
             pb10k: data.pb10k || '',
             pbHalfMarathon: data.pbHalfMarathon || '',
@@ -155,6 +158,7 @@ export default function ProfilePage() {
       height: formData.height ? parseInt(formData.height) : null,
       yearsRunning: formData.yearsRunning ? parseInt(formData.yearsRunning) : null,
       weeklyKm: formData.weeklyKm ? parseFloat(formData.weeklyKm) : null,
+      thresholdPace: formData.thresholdPace ? parseFloat(formData.thresholdPace) : null,
       pb5k: formData.pb5k || null,
       pb10k: formData.pb10k || null,
       pbHalfMarathon: formData.pbHalfMarathon || null,
@@ -326,6 +330,19 @@ export default function ProfilePage() {
                 className="w-full p-3 border border-zinc-700/50 rounded-lg bg-zinc-800/50 text-zinc-100 placeholder-zinc-600 focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50"
                 placeholder="40"
               />
+            </div>
+            <div>
+              <label className="block text-xs text-zinc-500 mb-1.5 uppercase tracking-wider">Ritmo umbral (min/km)</label>
+              <input
+                type="number"
+                step="0.1"
+                name="thresholdPace"
+                value={formData.thresholdPace}
+                onChange={handleChange}
+                className="w-full p-3 border border-zinc-700/50 rounded-lg bg-zinc-800/50 text-zinc-100 font-mono placeholder-zinc-600 focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50"
+                placeholder="5.0"
+              />
+              <p className="text-xs text-zinc-600 mt-1">Ej: 5.0 = 5:00/km, 4.5 = 4:30/km</p>
             </div>
             <div>
               <label className="block text-xs text-zinc-500 mb-1.5 uppercase tracking-wider">Terreno preferido</label>

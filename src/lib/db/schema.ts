@@ -29,6 +29,7 @@ export const runnerProfile = pgTable('runner_profile', {
   // Experiencia
   yearsRunning: integer('years_running'),
   weeklyKm: real('weekly_km'), // km/semana habitual
+  thresholdPace: real('threshold_pace'), // min/km (ej: 5.0 = 5:00/km)
   // Marcas personales
   pb5k: text('pb_5k'), // formato "20:30"
   pb10k: text('pb_10k'),
