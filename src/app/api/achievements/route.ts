@@ -158,8 +158,23 @@ export async function GET() {
           }
         }
 
-        const isUnlocked = unlockedIds.has(def.id);
-        const unlockedAt = unlocked.find((a) => a.achievementId === def.id)?.unlockedAt;
+        let isUnlocked = unlockedIds.has(def.id);
+        let unlockedAtStr: string | undefined = unlocked.find((a) => a.achievementId === def.id)?.unlockedAt?.toISOString();
+
+        // Auto-desbloquear si se alcanzó el objetivo pero no está desbloqueado
+        if (progress >= total && !isUnlocked) {
+          try {
+            await db.insert(achievements).values({
+              achievementId: def.id,
+              progress: total,
+            });
+            isUnlocked = true;
+            unlockedAtStr = new Date().toISOString();
+            unlockedIds.add(def.id);
+          } catch {
+            // Ignorar si ya existe (race condition)
+          }
+        }
 
         return {
           ...def,
@@ -167,7 +182,7 @@ export async function GET() {
           total,
           percentage: Math.min(Math.round((progress / total) * 100), 100),
           isUnlocked,
-          unlockedAt: unlockedAt?.toISOString(),
+          unlockedAt: unlockedAtStr,
         };
       })
     );
