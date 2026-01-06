@@ -52,8 +52,23 @@ export async function GET() {
     const unlocked = await db.select().from(achievements);
     const unlockedIds = new Set(unlocked.map((a) => a.achievementId));
 
-    // Obtener stats del usuario
+    // Obtener stats del usuario (para rachas)
     const [stats] = await db.select().from(userStats).limit(1);
+
+    // Calcular totales directamente desde calendarEvents (entrenamientos completados)
+    const [totals] = await db
+      .select({
+        totalDistance: sql<number>`coalesce(sum(${calendarEvents.distance}), 0)`,
+        totalWorkouts: sql<number>`count(*)`,
+        totalTime: sql<number>`coalesce(sum(${calendarEvents.duration}), 0)`,
+      })
+      .from(calendarEvents)
+      .where(
+        and(
+          eq(calendarEvents.category, 'running'),
+          eq(calendarEvents.completed, 1)
+        )
+      );
 
     // Calcular progreso de cada logro
     const achievementsWithProgress = await Promise.all(
@@ -63,22 +78,27 @@ export async function GET() {
 
         switch (def.category) {
           case 'distance':
-            progress = stats?.totalDistance || 0;
+            progress = Number(totals?.totalDistance) || 0;
             break;
           case 'workouts':
-            progress = stats?.totalWorkouts || 0;
+            progress = Number(totals?.totalWorkouts) || 0;
             break;
           case 'streak':
             progress = stats?.longestStreak || 0;
             break;
           case 'time':
-            progress = stats?.totalTime || 0;
+            progress = Number(totals?.totalTime) || 0;
             break;
           case 'single_run': {
             const [longest] = await db
               .select({ maxDistance: sql<number>`max(${calendarEvents.distance})` })
               .from(calendarEvents)
-              .where(eq(calendarEvents.category, 'running'));
+              .where(
+                and(
+                  eq(calendarEvents.category, 'running'),
+                  eq(calendarEvents.completed, 1)
+                )
+              );
             progress = longest?.maxDistance || 0;
             break;
           }
@@ -86,7 +106,12 @@ export async function GET() {
             const [elev] = await db
               .select({ totalElev: sql<number>`sum(${calendarEvents.elevationGain})` })
               .from(calendarEvents)
-              .where(eq(calendarEvents.category, 'running'));
+              .where(
+                and(
+                  eq(calendarEvents.category, 'running'),
+                  eq(calendarEvents.completed, 1)
+                )
+              );
             progress = elev?.totalElev || 0;
             break;
           }
@@ -98,6 +123,7 @@ export async function GET() {
                 .where(
                   and(
                     eq(calendarEvents.category, 'running'),
+                    eq(calendarEvents.completed, 1),
                     sql`${calendarEvents.time} < '07:00'`
                   )
                 );
@@ -109,6 +135,7 @@ export async function GET() {
                 .where(
                   and(
                     eq(calendarEvents.category, 'running'),
+                    eq(calendarEvents.completed, 1),
                     sql`${calendarEvents.time} >= '21:00'`
                   )
                 );
@@ -120,7 +147,12 @@ export async function GET() {
             const types = await db
               .selectDistinct({ type: calendarEvents.type })
               .from(calendarEvents)
-              .where(eq(calendarEvents.category, 'running'));
+              .where(
+                and(
+                  eq(calendarEvents.category, 'running'),
+                  eq(calendarEvents.completed, 1)
+                )
+              );
             progress = types.length;
             break;
           }
