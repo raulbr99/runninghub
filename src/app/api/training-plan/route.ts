@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { runnerProfile, appSettings } from '@/lib/db/schema';
+import { runnerProfile, appSettings, calendarEvents } from '@/lib/db/schema';
+import { gte, eq, and, desc, sql } from 'drizzle-orm';
 
 interface PlanRequest {
   raceType: '5k' | '10k' | 'half_marathon' | 'marathon' | 'trail' | 'ultra';
@@ -55,6 +56,150 @@ function getDayName(day: number): string {
   return days[day] || 'Domingo';
 }
 
+interface TrainingHistory {
+  weeklyVolumes: number[];
+  avgWeeklyKm: number;
+  maxLongRun: number;
+  totalWorkouts: number;
+  typeDistribution: Record<string, number>;
+  trend: 'increasing' | 'stable' | 'decreasing';
+  ctl: number;
+  atl: number;
+  tsb: number;
+}
+
+async function getTrainingHistory(): Promise<TrainingHistory | null> {
+  try {
+    // Obtener entrenamientos de las últimas 6 semanas
+    const sixWeeksAgo = new Date();
+    sixWeeksAgo.setDate(sixWeeksAgo.getDate() - 42);
+
+    const events = await db
+      .select()
+      .from(calendarEvents)
+      .where(
+        and(
+          gte(calendarEvents.date, sixWeeksAgo.toISOString().split('T')[0]),
+          eq(calendarEvents.category, 'running'),
+          eq(calendarEvents.completed, 1)
+        )
+      )
+      .orderBy(desc(calendarEvents.date));
+
+    if (events.length === 0) {
+      return null;
+    }
+
+    // Calcular volumen por semana
+    const weeklyData: Map<string, { km: number; workouts: number }> = new Map();
+    const typeCount: Record<string, number> = {};
+    let maxLongRun = 0;
+
+    events.forEach((event) => {
+      const eventDate = new Date(event.date);
+      const weekStart = new Date(eventDate);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+      const weekKey = weekStart.toISOString().split('T')[0];
+
+      const current = weeklyData.get(weekKey) || { km: 0, workouts: 0 };
+      current.km += event.distance || 0;
+      current.workouts += 1;
+      weeklyData.set(weekKey, current);
+
+      // Contar tipos de entreno
+      typeCount[event.type] = (typeCount[event.type] || 0) + 1;
+
+      // Máxima tirada larga
+      if (event.distance && event.distance > maxLongRun) {
+        maxLongRun = event.distance;
+      }
+    });
+
+    // Convertir a array ordenado (más reciente primero)
+    const weeklyVolumes = Array.from(weeklyData.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([, data]) => data.km);
+
+    // Calcular promedio semanal
+    const avgWeeklyKm = weeklyVolumes.length > 0
+      ? weeklyVolumes.reduce((a, b) => a + b, 0) / weeklyVolumes.length
+      : 0;
+
+    // Calcular tendencia
+    let trend: 'increasing' | 'stable' | 'decreasing' = 'stable';
+    if (weeklyVolumes.length >= 3) {
+      const recent = weeklyVolumes.slice(0, 2).reduce((a, b) => a + b, 0) / 2;
+      const older = weeklyVolumes.slice(-2).reduce((a, b) => a + b, 0) / 2;
+      if (recent > older * 1.1) trend = 'increasing';
+      else if (recent < older * 0.9) trend = 'decreasing';
+    }
+
+    // Calcular TSS simplificado y CTL/ATL
+    const tssPerDay: Map<string, number> = new Map();
+    const today = new Date();
+
+    for (let i = 0; i < 42; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      tssPerDay.set(date.toISOString().split('T')[0], 0);
+    }
+
+    events.forEach((event) => {
+      if (event.duration && event.distance) {
+        const pace = event.duration / event.distance;
+        const threshold = 5;
+        let intensityFactor = threshold / pace;
+
+        const typeMultipliers: Record<string, number> = {
+          easy: 0.7, recovery: 0.6, long: 0.75,
+          tempo: 0.88, intervals: 0.95, race: 1.0
+        };
+        intensityFactor = Math.min(intensityFactor * (typeMultipliers[event.type] || 0.75), 1.2);
+
+        const tss = ((event.duration * 60 * Math.pow(intensityFactor, 2)) / 3600) * 100;
+        const current = tssPerDay.get(event.date) || 0;
+        tssPerDay.set(event.date, current + tss);
+      }
+    });
+
+    const tssArray = Array.from(tssPerDay.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([, tss]) => tss);
+
+    // EWMA para CTL (42 días) y ATL (7 días)
+    const calculateEWMA = (values: number[], halfLife: number): number => {
+      if (values.length === 0) return 0;
+      const decay = Math.log(2) / halfLife;
+      let numerator = 0, denominator = 0;
+      values.forEach((value, index) => {
+        const weight = Math.exp(-decay * index);
+        numerator += value * weight;
+        denominator += weight;
+      });
+      return denominator > 0 ? numerator / denominator : 0;
+    };
+
+    const ctl = calculateEWMA(tssArray.slice(0, 42), 42);
+    const atl = calculateEWMA(tssArray.slice(0, 7), 7);
+    const tsb = ctl - atl;
+
+    return {
+      weeklyVolumes,
+      avgWeeklyKm: Math.round(avgWeeklyKm * 10) / 10,
+      maxLongRun: Math.round(maxLongRun * 10) / 10,
+      totalWorkouts: events.length,
+      typeDistribution: typeCount,
+      trend,
+      ctl: Math.round(ctl),
+      atl: Math.round(atl),
+      tsb: Math.round(tsb),
+    };
+  } catch (error) {
+    console.error('Error getting training history:', error);
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const data: PlanRequest = await request.json();
@@ -81,6 +226,9 @@ export async function POST(request: NextRequest) {
     const profiles = await db.select().from(runnerProfile).limit(1);
     const profile = profiles[0] || null;
 
+    // Obtener historial de entrenamientos recientes
+    const trainingHistory = await getTrainingHistory();
+
     // Obtener modelo configurado
     const settings = await db.select().from(appSettings).limit(1);
     const modelToUse = settings[0]?.trainingPlanModel || 'openai/gpt-4o';
@@ -105,6 +253,52 @@ export async function POST(request: NextRequest) {
       if (profileParts.length > 0) {
         profileContext = `\n\nPERFIL DEL CORREDOR:\n${profileParts.join('\n')}`;
       }
+    }
+
+    // Construir contexto del historial de entrenamiento
+    let historyContext = '';
+    if (trainingHistory) {
+      const trendText = {
+        increasing: 'aumentando volumen',
+        stable: 'estable',
+        decreasing: 'reduciendo volumen'
+      }[trainingHistory.trend];
+
+      const typeNames: Record<string, string> = {
+        easy: 'rodajes suaves', tempo: 'tempo', intervals: 'series',
+        fartlek: 'fartlek', long: 'tiradas largas', recovery: 'recuperacion',
+        race: 'carreras', trail: 'trail'
+      };
+
+      const typeList = Object.entries(trainingHistory.typeDistribution)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4)
+        .map(([type, count]) => `${typeNames[type] || type}: ${count}`)
+        .join(', ');
+
+      let formStatus = 'equilibrado';
+      if (trainingHistory.tsb > 15) formStatus = 'muy descansado (ideal para competir)';
+      else if (trainingHistory.tsb > 5) formStatus = 'bien recuperado';
+      else if (trainingHistory.tsb < -15) formStatus = 'acumulando fatiga (cuidado)';
+      else if (trainingHistory.tsb < -5) formStatus = 'ligeramente fatigado';
+
+      historyContext = `
+
+HISTORIAL DE ENTRENAMIENTO REAL (ultimas 6 semanas):
+- Volumen semanal promedio REAL: ${trainingHistory.avgWeeklyKm} km/semana
+- Volumen por semana (reciente a antiguo): ${trainingHistory.weeklyVolumes.map(v => Math.round(v)).join(', ')} km
+- Tendencia: ${trendText}
+- Total entrenamientos: ${trainingHistory.totalWorkouts}
+- Tirada larga maxima: ${trainingHistory.maxLongRun} km
+- Tipos de entreno realizados: ${typeList}
+- Fitness (CTL): ${trainingHistory.ctl} | Fatiga (ATL): ${trainingHistory.atl} | Forma (TSB): ${trainingHistory.tsb}
+- Estado de forma actual: ${formStatus}
+
+IMPORTANTE - USA ESTE HISTORIAL REAL:
+- Empieza el plan desde el volumen actual del corredor (${trainingHistory.avgWeeklyKm} km/sem), NO desde cero
+- Si el corredor esta fatigado (TSB negativo), empieza con semana de descarga
+- Respeta los tipos de entreno que ya hace habitualmente
+- La primera tirada larga no debe superar ${Math.round(trainingHistory.maxLongRun * 1.1)} km`;
     }
 
     const systemPrompt = `Eres un entrenador de running profesional con experiencia en preparacion de atletas para carreras.
@@ -154,7 +348,7 @@ PREFERENCIAS:
 - Incluir fuerza: ${data.includeStrength ? 'Si' : 'No'}
 - Incluir intervalos/series: ${data.includeIntervals ? 'Si' : 'No'}
 - Incluir tempo/ritmo controlado: ${data.includeTempo ? 'Si' : 'No'}
-${profileContext}
+${profileContext}${historyContext}
 
 ESTRUCTURA JSON REQUERIDA:
 {
