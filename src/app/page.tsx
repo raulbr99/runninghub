@@ -3,6 +3,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { xpForNextLevel } from '@/lib/gamification';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 
 interface RunnerProfile {
   name: string | null;
@@ -42,12 +50,40 @@ interface Challenge {
   endDate: string;
 }
 
+interface WeeklyStats {
+  week: string;
+  km: number;
+  sessions: number;
+  minutes: number;
+}
+
+interface DashboardStats {
+  weeklyStats: WeeklyStats[];
+  nextRace: {
+    id: string;
+    date: string;
+    title: string;
+    distance: number;
+  } | null;
+  targetDate: string | null;
+  targetRace: string | null;
+  prs: {
+    longestRun: number | null;
+    fastestPace: number | null;
+  };
+  quote: {
+    quote: string;
+    author: string;
+  };
+}
+
 export default function DashboardPage() {
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
   const [events, setEvents] = useState<RunningEvent[]>([]);
   const [weight, setWeight] = useState<WeightEntry | null>(null);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -56,12 +92,13 @@ export default function DashboardPage() {
 
   const loadData = async () => {
     try {
-      const [profileRes, eventsRes, weightRes, statsRes, challengesRes] = await Promise.all([
+      const [profileRes, eventsRes, weightRes, statsRes, challengesRes, dashboardRes] = await Promise.all([
         fetch('/api/runner-profile'),
         fetch(`/api/running-events?year=${new Date().getFullYear()}&month=${new Date().getMonth() + 1}`),
         fetch('/api/weight?limit=1'),
         fetch('/api/stats'),
         fetch('/api/challenges'),
+        fetch('/api/dashboard-stats'),
       ]);
 
       if (profileRes.ok) {
@@ -83,6 +120,10 @@ export default function DashboardPage() {
       if (challengesRes.ok) {
         const data = await challengesRes.json();
         setChallenges(data.active || []);
+      }
+      if (dashboardRes.ok) {
+        const data = await dashboardRes.json();
+        setDashboardStats(data);
       }
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -123,6 +164,19 @@ export default function DashboardPage() {
       other: 'Otro',
     };
     return types[type] || type;
+  };
+
+  const getDaysUntil = (dateStr: string) => {
+    const target = new Date(dateStr);
+    const now = new Date();
+    const diff = target.getTime() - now.getTime();
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  };
+
+  const formatPace = (minPerKm: number) => {
+    const mins = Math.floor(minPerKm);
+    const secs = Math.round((minPerKm - mins) * 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   if (loading) {
@@ -196,6 +250,140 @@ export default function DashboardPage() {
           </div>
           <p className="text-2xl font-mono text-zinc-100">{Math.floor(monthStats.totalDuration / 60)}:{(monthStats.totalDuration % 60).toString().padStart(2, '0')}</p>
           <p className="text-xs text-zinc-500 mt-1">horas activo</p>
+        </div>
+      </div>
+
+      {/* Gráfica de evolución + Cuenta atrás + PRs */}
+      <div className="grid lg:grid-cols-3 gap-4 mb-6">
+        {/* Gráfica de volumen semanal */}
+        <div className="lg:col-span-2 bg-zinc-900/50 rounded-xl border border-zinc-800/50 p-4">
+          <h2 className="text-sm font-medium text-zinc-300 uppercase tracking-wider mb-4">
+            Volumen semanal
+          </h2>
+          {dashboardStats?.weeklyStats && dashboardStats.weeklyStats.length > 0 ? (
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={dashboardStats.weeklyStats}>
+                  <defs>
+                    <linearGradient id="kmGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey="week"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10, fill: '#71717a' }}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10, fill: '#71717a' }}
+                    width={30}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#18181b',
+                      border: '1px solid #27272a',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                    }}
+                    labelStyle={{ color: '#a1a1aa' }}
+                    formatter={(value) => [`${value} km`, 'Distancia']}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="km"
+                    stroke="#10b981"
+                    strokeWidth={2}
+                    fill="url(#kmGradient)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-48 flex items-center justify-center text-zinc-500 text-sm">
+              Sin datos de las ultimas semanas
+            </div>
+          )}
+        </div>
+
+        {/* Cuenta atrás y PRs */}
+        <div className="space-y-4">
+          {/* Cuenta atrás */}
+          {(dashboardStats?.nextRace || dashboardStats?.targetDate) && (
+            <div className="bg-gradient-to-br from-emerald-900/30 to-zinc-900/50 rounded-xl border border-emerald-800/30 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0" />
+                </svg>
+                <span className="text-[10px] text-emerald-400 uppercase tracking-wider">Proxima carrera</span>
+              </div>
+              {dashboardStats.nextRace ? (
+                <>
+                  <p className="text-3xl font-mono text-zinc-100 mb-1">
+                    {getDaysUntil(dashboardStats.nextRace.date)}
+                    <span className="text-base text-zinc-400 ml-1">dias</span>
+                  </p>
+                  <p className="text-sm text-zinc-400">
+                    {dashboardStats.nextRace.title || dashboardStats.targetRace || 'Carrera'}
+                  </p>
+                  <p className="text-xs text-zinc-500 mt-1">
+                    {new Date(dashboardStats.nextRace.date).toLocaleDateString('es-ES', {
+                      day: 'numeric',
+                      month: 'long',
+                    })}
+                    {dashboardStats.nextRace.distance && ` - ${dashboardStats.nextRace.distance} km`}
+                  </p>
+                </>
+              ) : dashboardStats.targetDate ? (
+                <>
+                  <p className="text-3xl font-mono text-zinc-100 mb-1">
+                    {getDaysUntil(dashboardStats.targetDate)}
+                    <span className="text-base text-zinc-400 ml-1">dias</span>
+                  </p>
+                  <p className="text-sm text-zinc-400">{dashboardStats.targetRace || 'Objetivo'}</p>
+                </>
+              ) : null}
+            </div>
+          )}
+
+          {/* PRs del mes */}
+          {(dashboardStats?.prs?.longestRun || dashboardStats?.prs?.fastestPace) && (
+            <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 p-4">
+              <h3 className="text-[10px] text-zinc-500 uppercase tracking-wider mb-3">PRs este mes</h3>
+              <div className="space-y-3">
+                {dashboardStats.prs.longestRun && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-zinc-400">Tirada mas larga</span>
+                    <span className="text-sm font-mono text-emerald-400">
+                      {dashboardStats.prs.longestRun.toFixed(1)} km
+                    </span>
+                  </div>
+                )}
+                {dashboardStats.prs.fastestPace && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-zinc-400">Ritmo mas rapido</span>
+                    <span className="text-sm font-mono text-emerald-400">
+                      {formatPace(dashboardStats.prs.fastestPace)} /km
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Frase motivacional */}
+          {dashboardStats?.quote && (
+            <div className="bg-zinc-900/50 rounded-xl border border-zinc-800/50 p-4">
+              <svg className="w-5 h-5 text-amber-500 mb-2" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+              </svg>
+              <p className="text-sm text-zinc-300 italic mb-2">&quot;{dashboardStats.quote.quote}&quot;</p>
+              <p className="text-xs text-zinc-500">— {dashboardStats.quote.author}</p>
+            </div>
+          )}
         </div>
       </div>
 

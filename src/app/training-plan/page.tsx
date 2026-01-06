@@ -80,13 +80,14 @@ const typeIcons: Record<string, { icon: React.ReactNode; color: string }> = {
 };
 
 export default function TrainingPlanPage() {
-  const [step, setStep] = useState<'form' | 'generating' | 'preview' | 'saving'>('form');
+  const [step, setStep] = useState<'form' | 'generating' | 'preview' | 'saving' | 'savingPlan'>('form');
   const [plan, setPlan] = useState<GeneratedPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expandedWeeks, setExpandedWeeks] = useState<number[]>([1]);
   const [chatMessage, setChatMessage] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
+  const [isSavingPlan, setIsSavingPlan] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     raceType: 'half_marathon',
     raceName: '',
@@ -236,6 +237,46 @@ export default function TrainingPlanPage() {
       setChatHistory(prev => [...prev, { role: 'assistant', content: `Error: ${err instanceof Error ? err.message : 'Error desconocido'}` }]);
     } finally {
       setIsEditing(false);
+    }
+  };
+
+  const savePlanOnly = async () => {
+    if (!plan) return;
+
+    setIsSavingPlan(true);
+    setStep('savingPlan');
+    setError(null);
+
+    try {
+      const totalKm = plan.events.reduce((sum, e) => sum + (e.distance || 0), 0);
+
+      const response = await fetch('/api/training-plans', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: plan.planName,
+          raceType: formData.raceType,
+          raceDate: formData.raceDate || null,
+          level: formData.currentLevel,
+          totalWeeks: plan.totalWeeks,
+          totalKm,
+          phases: plan.phases,
+          events: plan.events,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Error al guardar el plan');
+      }
+
+      const { plan: savedPlan } = await response.json();
+      window.location.href = `/plans/${savedPlan.id}`;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error desconocido');
+      setStep('preview');
+    } finally {
+      setIsSavingPlan(false);
     }
   };
 
@@ -679,22 +720,34 @@ export default function TrainingPlanPage() {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3">
+          <div className="space-y-3">
+            <div className="flex gap-3">
+              <button
+                onClick={savePlanOnly}
+                disabled={isEditing || isSavingPlan}
+                className="flex-1 py-3 border border-emerald-600 text-emerald-400 hover:bg-emerald-600/10 disabled:opacity-50 rounded-xl font-medium flex items-center justify-center gap-2 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
+                </svg>
+                Guardar Plan
+              </button>
+              <button
+                onClick={savePlan}
+                disabled={isEditing || isSavingPlan}
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-600/50 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                </svg>
+                Añadir al Calendario
+              </button>
+            </div>
             <button
               onClick={() => { setStep('form'); setPlan(null); setChatHistory([]); }}
-              className="flex-1 py-3 border border-zinc-700 rounded-xl text-zinc-400 hover:bg-zinc-800 transition-colors"
+              className="w-full py-2 text-zinc-500 hover:text-zinc-300 text-sm transition-colors"
             >
               Volver a configurar
-            </button>
-            <button
-              onClick={savePlan}
-              disabled={isEditing}
-              className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-600/50 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
-              </svg>
-              Agregar al Calendario ({plan.events.length} sesiones)
             </button>
           </div>
         </div>
@@ -706,6 +759,15 @@ export default function TrainingPlanPage() {
           <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-6" />
           <p className="text-lg text-zinc-300 mb-2">Guardando en el calendario</p>
           <p className="text-sm text-zinc-500">Creando {plan?.events.length} sesiones...</p>
+        </div>
+      )}
+
+      {/* Saving Plan Step */}
+      {step === 'savingPlan' && (
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-6" />
+          <p className="text-lg text-zinc-300 mb-2">Guardando plan</p>
+          <p className="text-sm text-zinc-500">Esto tardara un momento...</p>
         </div>
       )}
     </div>

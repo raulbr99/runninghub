@@ -420,6 +420,161 @@ export const motivationalQuotes = pgTable('motivational_quotes', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+// ==========================================
+// PLANES DE ENTRENAMIENTO GUARDADOS
+// ==========================================
+
+// Fases de un plan
+export interface PlanPhase {
+  name: string;
+  weeks: string;
+  focus: string;
+}
+
+// Planes de entrenamiento guardados
+export const trainingPlans = pgTable('training_plans', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  raceType: text('race_type').notNull(), // '5k' | '10k' | 'half_marathon' | 'marathon' | 'trail' | 'ultra'
+  raceDate: date('race_date'),
+  level: text('level').notNull(), // 'beginner' | 'intermediate' | 'advanced'
+  totalWeeks: integer('total_weeks').notNull(),
+  totalKm: real('total_km'),
+  phases: jsonb('phases').$type<PlanPhase[]>(),
+  status: text('status').default('draft').notNull(), // 'draft' | 'active' | 'completed' | 'archived'
+  addedToCalendar: integer('added_to_calendar').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Eventos de un plan de entrenamiento
+export const trainingPlanEvents = pgTable('training_plan_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  planId: uuid('plan_id').references(() => trainingPlans.id, { onDelete: 'cascade' }).notNull(),
+  date: date('date').notNull(),
+  type: text('type').notNull(), // 'easy' | 'tempo' | 'intervals' | etc.
+  title: text('title'),
+  distance: real('distance'), // km
+  duration: integer('duration'), // minutos
+  notes: text('notes'),
+  sortOrder: integer('sort_order').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// ==========================================
+// TRACKER DE LESIONES Y SALUD
+// ==========================================
+
+// Registro de lesiones
+export const injuries = pgTable('injuries', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(), // "Fascitis plantar"
+  bodyPart: text('body_part').notNull(), // "foot" | "ankle" | "knee" | "hip" | "hamstring" | "calf" | "shin" | "back" | "other"
+  side: text('side'), // "left" | "right" | "both"
+  severity: text('severity').notNull(), // "mild" | "moderate" | "severe"
+  status: text('status').default('active').notNull(), // "active" | "recovering" | "healed"
+  // Fechas
+  startDate: date('start_date').notNull(),
+  endDate: date('end_date'),
+  // Detalles
+  cause: text('cause'), // "Sobreentrenamiento"
+  symptoms: text('symptoms'),
+  treatment: text('treatment'),
+  doctor: text('doctor'),
+  diagnosis: text('diagnosis'),
+  notes: text('notes'),
+  // Impacto en entrenamiento
+  daysOff: integer('days_off').default(0),
+  // Timestamps
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Historial de evolución de lesiones
+export const injuryLogs = pgTable('injury_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  injuryId: uuid('injury_id').references(() => injuries.id, { onDelete: 'cascade' }).notNull(),
+  date: date('date').notNull(),
+  painLevel: integer('pain_level').notNull(), // 1-10
+  notes: text('notes'),
+  treatment: text('treatment'), // Tratamiento aplicado ese día
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Ejercicios de prevención/rehabilitación
+export const preventionExercises = pgTable('prevention_exercises', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  description: text('description'),
+  bodyPart: text('body_part').notNull(), // Parte del cuerpo que trabaja
+  type: text('type').notNull(), // "strength" | "stretch" | "mobility" | "foam_roller"
+  duration: integer('duration'), // segundos
+  sets: integer('sets'),
+  reps: integer('reps'),
+  videoUrl: text('video_url'),
+  imageUrl: text('image_url'),
+  difficulty: text('difficulty').default('beginner'), // "beginner" | "intermediate" | "advanced"
+  isPreset: integer('is_preset').default(0), // 1 = ejercicio predefinido del sistema
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Rutinas de prevención
+export const preventionRoutines = pgTable('prevention_routines', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  description: text('description'),
+  type: text('type').notNull(), // "pre_run" | "post_run" | "recovery" | "strength"
+  exercises: jsonb('exercises').$type<{ exerciseId: string; order: number; customSets?: number; customReps?: number }[]>(),
+  totalDuration: integer('total_duration'), // minutos estimados
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// ==========================================
+// CARRERAS Y EVENTOS
+// ==========================================
+
+// Carreras/competiciones
+export const races = pgTable('races', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(), // "Media Maratón Valencia"
+  date: date('date').notNull(),
+  distance: real('distance').notNull(), // km
+  distanceType: text('distance_type'), // "5k" | "10k" | "half_marathon" | "marathon" | "ultra" | "trail" | "other"
+  location: text('location'), // "Valencia, España"
+  country: text('country'),
+  // Resultados
+  finishTime: integer('finish_time'), // segundos
+  position: integer('position'),
+  categoryPosition: integer('category_position'),
+  totalParticipants: integer('total_participants'),
+  category: text('category'), // "M30-35"
+  // Métricas
+  avgPace: real('avg_pace'), // min/km
+  avgHeartRate: integer('avg_heart_rate'),
+  elevationGain: real('elevation_gain'), // metros
+  // Info adicional
+  dorsalNumber: text('dorsal_number'),
+  cost: real('cost'), // precio inscripción
+  website: text('website'),
+  notes: text('notes'),
+  // Estado
+  status: text('status').default('upcoming').notNull(), // "upcoming" | "completed" | "dns" | "dnf"
+  // Timestamps
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Fotos de carreras
+export const racePhotos = pgTable('race_photos', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  raceId: uuid('race_id').references(() => races.id, { onDelete: 'cascade' }).notNull(),
+  url: text('url').notNull(), // URL de la imagen (puede ser base64 o URL externa)
+  type: text('type').default('photo'), // "photo" | "dorsal" | "certificate" | "medal"
+  caption: text('caption'),
+  sortOrder: integer('sort_order').default(0),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 // Types para TypeScript
 export type Conversation = typeof conversations.$inferSelect;
 export type NewConversation = typeof conversations.$inferInsert;
@@ -460,3 +615,19 @@ export type CustomHabit = typeof customHabits.$inferSelect;
 export type NewCustomHabit = typeof customHabits.$inferInsert;
 export type HabitLog = typeof habitLogs.$inferSelect;
 export type NewHabitLog = typeof habitLogs.$inferInsert;
+export type TrainingPlan = typeof trainingPlans.$inferSelect;
+export type NewTrainingPlan = typeof trainingPlans.$inferInsert;
+export type TrainingPlanEvent = typeof trainingPlanEvents.$inferSelect;
+export type NewTrainingPlanEvent = typeof trainingPlanEvents.$inferInsert;
+export type Injury = typeof injuries.$inferSelect;
+export type NewInjury = typeof injuries.$inferInsert;
+export type InjuryLog = typeof injuryLogs.$inferSelect;
+export type NewInjuryLog = typeof injuryLogs.$inferInsert;
+export type PreventionExercise = typeof preventionExercises.$inferSelect;
+export type NewPreventionExercise = typeof preventionExercises.$inferInsert;
+export type PreventionRoutine = typeof preventionRoutines.$inferSelect;
+export type NewPreventionRoutine = typeof preventionRoutines.$inferInsert;
+export type Race = typeof races.$inferSelect;
+export type NewRace = typeof races.$inferInsert;
+export type RacePhoto = typeof racePhotos.$inferSelect;
+export type NewRacePhoto = typeof racePhotos.$inferInsert;
