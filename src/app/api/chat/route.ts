@@ -78,6 +78,44 @@ const createEventTool = {
   },
 };
 
+const updateEventTool = {
+  type: 'function' as const,
+  function: {
+    name: 'update_running_event',
+    description: 'Actualiza/edita un evento existente del calendario. Usa get_running_events primero para obtener el ID del evento.',
+    parameters: {
+      type: 'object',
+      properties: {
+        eventId: { type: 'string', description: 'ID del evento a actualizar (UUID)' },
+        date: { type: 'string', description: 'Nueva fecha YYYY-MM-DD' },
+        type: { type: 'string', description: 'Nuevo tipo de evento' },
+        title: { type: 'string', description: 'Nuevo titulo' },
+        time: { type: 'string', description: 'Nueva hora HH:MM' },
+        distance: { type: 'number', description: 'Nueva distancia en km' },
+        duration: { type: 'number', description: 'Nueva duracion en minutos' },
+        notes: { type: 'string', description: 'Nuevas notas' },
+        completed: { type: 'boolean', description: 'Marcar como completado o no' },
+      },
+      required: ['eventId'],
+    },
+  },
+};
+
+const deleteEventTool = {
+  type: 'function' as const,
+  function: {
+    name: 'delete_running_event',
+    description: 'Elimina un evento del calendario.',
+    parameters: {
+      type: 'object',
+      properties: {
+        eventId: { type: 'string', description: 'ID del evento a eliminar (UUID)' },
+      },
+      required: ['eventId'],
+    },
+  },
+};
+
 const logWeightTool = {
   type: 'function' as const,
   function: {
@@ -203,6 +241,56 @@ async function executeCreateEvent(args: Record<string, unknown>) {
   }
 }
 
+async function executeUpdateEvent(args: Record<string, unknown>) {
+  try {
+    const eventId = args.eventId as string;
+    if (!eventId) {
+      return { success: false, message: 'Se requiere eventId' };
+    }
+
+    const updateData: Record<string, unknown> = { updatedAt: new Date() };
+
+    if (args.date !== undefined) updateData.date = args.date as string;
+    if (args.type !== undefined) updateData.type = args.type as string;
+    if (args.title !== undefined) updateData.title = args.title as string;
+    if (args.time !== undefined) updateData.time = args.time as string;
+    if (args.distance !== undefined) updateData.distance = Number(args.distance);
+    if (args.duration !== undefined) updateData.duration = Number(args.duration);
+    if (args.notes !== undefined) updateData.notes = args.notes as string;
+    if (args.completed !== undefined) updateData.completed = args.completed ? 1 : 0;
+
+    const [event] = await db
+      .update(runningEvents)
+      .set(updateData)
+      .where(eq(runningEvents.id, eventId))
+      .returning();
+
+    if (!event) {
+      return { success: false, message: 'Evento no encontrado' };
+    }
+
+    return { success: true, message: 'Evento actualizado', event };
+  } catch (error) {
+    console.error('Error updating event:', error);
+    return { success: false, message: 'Error al actualizar evento' };
+  }
+}
+
+async function executeDeleteEvent(args: Record<string, unknown>) {
+  try {
+    const eventId = args.eventId as string;
+    if (!eventId) {
+      return { success: false, message: 'Se requiere eventId' };
+    }
+
+    await db.delete(runningEvents).where(eq(runningEvents.id, eventId));
+    return { success: true, message: 'Evento eliminado' };
+  } catch (error) {
+    console.error('Error deleting event:', error);
+    return { success: false, message: 'Error al eliminar evento' };
+  }
+}
+
 async function executeLogWeight(args: Record<string, unknown>) {
   try {
     const date = (args.date as string) || new Date().toISOString().split('T')[0];
@@ -243,6 +331,8 @@ async function executeTool(name: string, args: Record<string, unknown>) {
     case 'save_runner_profile': return executeProfileSave(args);
     case 'get_running_events': return executeGetEvents(args);
     case 'create_running_event': return executeCreateEvent(args);
+    case 'update_running_event': return executeUpdateEvent(args);
+    case 'delete_running_event': return executeDeleteEvent(args);
     case 'log_weight': return executeLogWeight(args);
     case 'get_weight_history': return executeGetWeightHistory(args);
     default: return { success: false, message: `Tool desconocido: ${name}` };
@@ -266,7 +356,7 @@ export async function POST(request: NextRequest) {
   try {
     const { messages, model = 'openai/gpt-4o', temperature = 0.7, hasImage = false }: ChatRequest = await request.json();
 
-    const tools = [saveProfileTool, getEventsTool, createEventTool, logWeightTool, getWeightHistoryTool];
+    const tools = [saveProfileTool, getEventsTool, createEventTool, updateEventTool, deleteEventTool, logWeightTool, getWeightHistoryTool];
 
     // When there's an image, don't use tools (some models don't support both)
     const requestBody: Record<string, unknown> = {
@@ -407,6 +497,8 @@ export async function POST(request: NextRequest) {
               const notification: Record<string, unknown> = { toolExecuted: toolCallData.toolCallName };
               if (toolCallData.toolCallName === 'save_runner_profile') notification.profileSaved = true;
               if (toolCallData.toolCallName === 'create_running_event') notification.eventCreated = true;
+              if (toolCallData.toolCallName === 'update_running_event') notification.eventUpdated = true;
+              if (toolCallData.toolCallName === 'delete_running_event') notification.eventDeleted = true;
               if (toolCallData.toolCallName === 'log_weight') notification.weightLogged = true;
               if (toolCallData.toolCallName === 'log_meal') notification.mealLogged = true;
               controller.enqueue(encoder.encode(`data: ${JSON.stringify(notification)}\n\n`));
