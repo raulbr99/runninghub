@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { weightEntries } from '@/lib/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '30');
 
     const entries = await db
       .select()
       .from(weightEntries)
+      .where(eq(weightEntries.userId, userId))
       .orderBy(desc(weightEntries.date))
       .limit(limit);
 
@@ -23,10 +26,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const data = await request.json();
     const [entry] = await db
       .insert(weightEntries)
       .values({
+        userId,
         date: data.date || new Date().toISOString().split('T')[0],
         weight: data.weight,
         bodyFat: data.bodyFat || null,
@@ -44,6 +49,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const data = await request.json();
     if (!data.id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
@@ -56,7 +62,7 @@ export async function PUT(request: NextRequest) {
         muscleMass: data.muscleMass,
         notes: data.notes,
       })
-      .where(eq(weightEntries.id, data.id))
+      .where(and(eq(weightEntries.id, data.id), eq(weightEntries.userId, userId)))
       .returning();
 
     return NextResponse.json(entry);
@@ -68,11 +74,12 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
-    await db.delete(weightEntries).where(eq(weightEntries.id, id));
+    await db.delete(weightEntries).where(and(eq(weightEntries.id, id), eq(weightEntries.userId, userId)));
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting weight entry:', error);

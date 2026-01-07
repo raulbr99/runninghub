@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { calendarEvents } from '@/lib/db/schema';
 import { eq, and, gte, lte } from 'drizzle-orm';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const { searchParams } = new URL(request.url);
     const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString());
     const month = parseInt(searchParams.get('month') || (new Date().getMonth() + 1).toString());
@@ -15,7 +17,11 @@ export async function GET(request: NextRequest) {
     const events = await db
       .select()
       .from(calendarEvents)
-      .where(and(gte(calendarEvents.date, startDate), lte(calendarEvents.date, endDate)))
+      .where(and(
+        eq(calendarEvents.userId, userId),
+        gte(calendarEvents.date, startDate),
+        lte(calendarEvents.date, endDate)
+      ))
       .orderBy(calendarEvents.date);
 
     return NextResponse.json(events);
@@ -27,6 +33,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const data = await request.json();
 
     // Construir eventData segun la categoria
@@ -57,6 +64,7 @@ export async function POST(request: NextRequest) {
     const [event] = await db
       .insert(calendarEvents)
       .values({
+        userId,
         date: data.date,
         category: data.category || 'running',
         type: data.type,
@@ -83,6 +91,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const data = await request.json();
     if (!data.id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
@@ -130,7 +139,7 @@ export async function PUT(request: NextRequest) {
         eventData: Object.keys(eventData).length > 0 ? eventData : null,
         updatedAt: new Date(),
       })
-      .where(eq(calendarEvents.id, data.id))
+      .where(and(eq(calendarEvents.id, data.id), eq(calendarEvents.userId, userId)))
       .returning();
 
     return NextResponse.json(event);
@@ -142,11 +151,12 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
-    await db.delete(calendarEvents).where(eq(calendarEvents.id, id));
+    await db.delete(calendarEvents).where(and(eq(calendarEvents.id, id), eq(calendarEvents.userId, userId)));
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting event:', error);

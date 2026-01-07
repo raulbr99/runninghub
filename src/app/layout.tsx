@@ -1,19 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { SessionProvider } from "next-auth/react";
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
-import ChatPopup from "@/components/ChatPopup";
+import { AuthenticatedLayout } from "@/components/AuthenticatedLayout";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "RunningHub",
@@ -46,14 +35,14 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-950 text-zinc-100`}
+        className="font-sans antialiased bg-zinc-950 text-zinc-100"
       >
-        <Sidebar />
-        <main className="md:ml-64 min-h-screen">
-          {children}
-        </main>
-        <ChatPopup />
-        <ServiceWorkerRegister />
+        <SessionProvider>
+          <AuthenticatedLayout>
+            {children}
+          </AuthenticatedLayout>
+          <ServiceWorkerRegister />
+        </SessionProvider>
       </body>
     </html>
   );

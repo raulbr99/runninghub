@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { runnerProfile } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET() {
   try {
-    const profiles = await db.select().from(runnerProfile).limit(1);
+    const userId = await requireAuth();
+    const profiles = await db.select().from(runnerProfile).where(eq(runnerProfile.userId, userId)).limit(1);
     if (profiles.length === 0) {
       return NextResponse.json(null);
     }
@@ -18,10 +20,11 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const data = await request.json();
-    const profiles = await db.select().from(runnerProfile).limit(1);
+    const profiles = await db.select().from(runnerProfile).where(eq(runnerProfile.userId, userId)).limit(1);
 
-    const updateData = { ...data, updatedAt: new Date() };
+    const updateData = { ...data, userId, updatedAt: new Date() };
 
     if (profiles.length === 0) {
       const [profile] = await db.insert(runnerProfile).values(updateData).returning();

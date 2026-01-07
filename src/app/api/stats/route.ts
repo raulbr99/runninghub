@@ -1,18 +1,21 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { userStats, achievements, runningEvents, books, dailyHabits } from '@/lib/db/schema';
-import { eq, sql, gte, and } from 'drizzle-orm';
+import { eq, sql, and } from 'drizzle-orm';
 import { calculateLevel, ACHIEVEMENTS } from '@/lib/gamification';
+import { requireAuth } from '@/lib/auth';
 
 // GET - Obtener estadísticas del usuario
 export async function GET() {
   try {
+    const userId = await requireAuth();
+
     // Obtener o crear stats del usuario
-    let stats = await db.select().from(userStats).limit(1);
+    let stats = await db.select().from(userStats).where(eq(userStats.userId, userId)).limit(1);
 
     if (stats.length === 0) {
       // Crear stats iniciales
-      const newStats = await db.insert(userStats).values({}).returning();
+      const newStats = await db.insert(userStats).values({ userId }).returning();
       stats = newStats;
     }
 
@@ -24,17 +27,18 @@ export async function GET() {
         totalTime: sql<number>`coalesce(sum(${runningEvents.duration}), 0)`,
       })
       .from(runningEvents)
-      .where(eq(runningEvents.completed, 1));
+      .where(and(eq(runningEvents.userId, userId), eq(runningEvents.completed, 1)));
 
     const bookTotals = await db
       .select({
         completed: sql<number>`count(*) filter (where ${books.status} = 'completed')`,
         totalPages: sql<number>`coalesce(sum(${books.currentPage}), 0)`,
       })
-      .from(books);
+      .from(books)
+      .where(eq(books.userId, userId));
 
     // Obtener logros desbloqueados
-    const unlockedAchievements = await db.select().from(achievements);
+    const unlockedAchievements = await db.select().from(achievements).where(eq(achievements.userId, userId));
     const unlockedIds = unlockedAchievements.map(a => a.achievementId);
 
     // Calcular racha actual
@@ -42,7 +46,7 @@ export async function GET() {
     const todayHabits = await db
       .select()
       .from(dailyHabits)
-      .where(eq(dailyHabits.date, today))
+      .where(and(eq(dailyHabits.userId, userId), eq(dailyHabits.date, today)))
       .limit(1);
 
     const currentStats = stats[0];
@@ -68,13 +72,14 @@ export async function GET() {
 // POST - Añadir XP y verificar logros
 export async function POST(request: Request) {
   try {
+    const userId = await requireAuth();
     const { xpToAdd, source } = await request.json();
 
     // Obtener stats actuales
-    let stats = await db.select().from(userStats).limit(1);
+    let stats = await db.select().from(userStats).where(eq(userStats.userId, userId)).limit(1);
 
     if (stats.length === 0) {
-      const newStats = await db.insert(userStats).values({}).returning();
+      const newStats = await db.insert(userStats).values({ userId }).returning();
       stats = newStats;
     }
 
@@ -93,7 +98,7 @@ export async function POST(request: Request) {
       .where(eq(userStats.id, currentStats.id));
 
     // Verificar nuevos logros
-    const unlockedAchievements = await db.select().from(achievements);
+    const unlockedAchievements = await db.select().from(achievements).where(eq(achievements.userId, userId));
     const unlockedIds = new Set(unlockedAchievements.map(a => a.achievementId));
 
     // Obtener totales actuales
@@ -103,14 +108,15 @@ export async function POST(request: Request) {
         totalDistance: sql<number>`coalesce(sum(${runningEvents.distance}), 0)`,
       })
       .from(runningEvents)
-      .where(eq(runningEvents.completed, 1));
+      .where(and(eq(runningEvents.userId, userId), eq(runningEvents.completed, 1)));
 
     const bookTotals = await db
       .select({
         completed: sql<number>`count(*) filter (where ${books.status} = 'completed')`,
         totalPages: sql<number>`coalesce(sum(${books.currentPage}), 0)`,
       })
-      .from(books);
+      .from(books)
+      .where(eq(books.userId, userId));
 
     const totals = {
       total_workouts: Number(workoutTotals[0]?.count || 0),
@@ -157,6 +163,7 @@ export async function POST(request: Request) {
 
       if (achieved) {
         await db.insert(achievements).values({
+          userId,
           achievementId: achievement.id,
           progress: req.value,
         });

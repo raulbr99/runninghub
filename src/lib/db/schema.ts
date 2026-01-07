@@ -1,8 +1,58 @@
-import { pgTable, text, timestamp, uuid, jsonb, date, real, integer } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, jsonb, date, real, integer, primaryKey } from 'drizzle-orm/pg-core';
+import type { AdapterAccountType } from 'next-auth/adapters';
+
+// ==========================================
+// AUTENTICACIÓN (NextAuth.js)
+// ==========================================
+
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name'),
+  email: text('email').unique(),
+  emailVerified: timestamp('email_verified', { mode: 'date' }),
+  image: text('image'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const accounts = pgTable('accounts', {
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  type: text('type').$type<AdapterAccountType>().notNull(),
+  provider: text('provider').notNull(),
+  providerAccountId: text('provider_account_id').notNull(),
+  refresh_token: text('refresh_token'),
+  access_token: text('access_token'),
+  expires_at: integer('expires_at'),
+  token_type: text('token_type'),
+  scope: text('scope'),
+  id_token: text('id_token'),
+  session_state: text('session_state'),
+}, (account) => [
+  primaryKey({ columns: [account.provider, account.providerAccountId] }),
+]);
+
+export const sessions = pgTable('sessions', {
+  sessionToken: text('session_token').primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  expires: timestamp('expires', { mode: 'date' }).notNull(),
+});
+
+export const verificationTokens = pgTable('verification_tokens', {
+  identifier: text('identifier').notNull(),
+  token: text('token').notNull(),
+  expires: timestamp('expires', { mode: 'date' }).notNull(),
+}, (vt) => [
+  primaryKey({ columns: [vt.identifier, vt.token] }),
+]);
+
+// ==========================================
+// CONVERSACIONES Y MENSAJES
+// ==========================================
 
 // Conversaciones de chat
 export const conversations = pgTable('conversations', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   title: text('title').notNull().default('Nueva conversacion'),
   model: text('model').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -21,6 +71,7 @@ export const messages = pgTable('messages', {
 // Perfil de corredor (memoria persistente)
 export const runnerProfile = pgTable('runner_profile', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   // Datos personales
   name: text('name'),
   age: integer('age'),
@@ -100,6 +151,7 @@ export interface EventData {
 // Eventos del calendario (mantenemos nombre running_events en DB por compatibilidad)
 export const calendarEvents = pgTable('running_events', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   date: date('date').notNull(),
   // Categoria y tipo
   category: text('category').default('running').notNull(), // running | strength | cycling | swimming | other_sport | personal | rest
@@ -224,6 +276,7 @@ export const runningEvents = calendarEvents;
 // Registro de peso
 export const weightEntries = pgTable('weight_entries', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   date: date('date').notNull(),
   weight: real('weight').notNull(), // kg
   bodyFat: real('body_fat'), // porcentaje
@@ -235,6 +288,7 @@ export const weightEntries = pgTable('weight_entries', {
 // Registro de comidas
 export const nutritionEntries = pgTable('nutrition_entries', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   date: date('date').notNull(),
   mealType: text('meal_type').notNull(), // 'breakfast' | 'lunch' | 'dinner' | 'snack'
   description: text('description').notNull(),
@@ -249,6 +303,7 @@ export const nutritionEntries = pgTable('nutrition_entries', {
 // Objetivos nutricionales
 export const nutritionGoals = pgTable('nutrition_goals', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   calories: integer('calories'),
   protein: real('protein'),
   carbs: real('carbs'),
@@ -259,6 +314,7 @@ export const nutritionGoals = pgTable('nutrition_goals', {
 // Configuracion de la app
 export const appSettings = pgTable('app_settings', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   selectedModel: text('selected_model').default('openai/gpt-4o').notNull(),
   selectedModels: jsonb('selected_models').$type<string[]>().default(['openai/gpt-4o']).notNull(),
   trainingPlanModel: text('training_plan_model').default('openai/gpt-4o'),
@@ -268,6 +324,7 @@ export const appSettings = pgTable('app_settings', {
 // Tokens de Strava
 export const stravaTokens = pgTable('strava_tokens', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   athleteId: text('athlete_id').notNull().unique(),
   accessToken: text('access_token').notNull(),
   refreshToken: text('refresh_token').notNull(),
@@ -285,6 +342,7 @@ export const stravaTokens = pgTable('strava_tokens', {
 // Estadísticas del usuario (XP, nivel, rachas)
 export const userStats = pgTable('user_stats', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   totalXp: integer('total_xp').default(0).notNull(),
   level: integer('level').default(1).notNull(),
   // Rachas
@@ -305,6 +363,7 @@ export const userStats = pgTable('user_stats', {
 // Logros/Badges desbloqueados
 export const achievements = pgTable('achievements', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   achievementId: text('achievement_id').notNull(), // ID único del logro
   unlockedAt: timestamp('unlocked_at').defaultNow().notNull(),
   progress: integer('progress').default(0), // Progreso actual hacia el logro
@@ -313,6 +372,7 @@ export const achievements = pgTable('achievements', {
 // Retos activos
 export const challenges = pgTable('challenges', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   type: text('type').notNull(), // 'weekly_distance' | 'weekly_workouts' | 'read_pages' | 'streak'
   title: text('title').notNull(),
   description: text('description'),
@@ -328,6 +388,7 @@ export const challenges = pgTable('challenges', {
 // Lista de libros
 export const books = pgTable('books', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
   author: text('author'),
   totalPages: integer('total_pages'),
@@ -357,6 +418,7 @@ export const readingLog = pgTable('reading_log', {
 // Hábitos diarios
 export const dailyHabits = pgTable('daily_habits', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   date: date('date').notNull(),
   // Hábitos de entrenamiento
   didWorkout: integer('did_workout').default(0).notNull(),
@@ -378,6 +440,7 @@ export const dailyHabits = pgTable('daily_habits', {
 // Hábitos personalizables
 export const customHabits = pgTable('custom_habits', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   description: text('description'),
   icon: text('icon').default('⭐').notNull(), // emoji
@@ -414,6 +477,7 @@ export const habitLogs = pgTable('habit_logs', {
 // Frases motivacionales personalizadas
 export const motivationalQuotes = pgTable('motivational_quotes', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   quote: text('quote').notNull(),
   author: text('author'),
   category: text('category'), // 'training' | 'consistency' | 'achievement' | 'reading'
@@ -435,6 +499,7 @@ export interface PlanPhase {
 // Planes de entrenamiento guardados
 export const trainingPlans = pgTable('training_plans', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   raceType: text('race_type').notNull(), // '5k' | '10k' | 'half_marathon' | 'marathon' | 'trail' | 'ultra'
   raceDate: date('race_date'),
@@ -469,6 +534,7 @@ export const trainingPlanEvents = pgTable('training_plan_events', {
 // Registro de lesiones
 export const injuries = pgTable('injuries', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull(), // "Fascitis plantar"
   bodyPart: text('body_part').notNull(), // "foot" | "ankle" | "knee" | "hip" | "hamstring" | "calf" | "shin" | "back" | "other"
   side: text('side'), // "left" | "right" | "both"
@@ -505,6 +571,7 @@ export const injuryLogs = pgTable('injury_logs', {
 // Ejercicios de prevención/rehabilitación
 export const preventionExercises = pgTable('prevention_exercises', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   description: text('description'),
   bodyPart: text('body_part').notNull(), // Parte del cuerpo que trabaja
@@ -522,6 +589,7 @@ export const preventionExercises = pgTable('prevention_exercises', {
 // Rutinas de prevención
 export const preventionRoutines = pgTable('prevention_routines', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   description: text('description'),
   type: text('type').notNull(), // "pre_run" | "post_run" | "recovery" | "strength"
@@ -537,6 +605,7 @@ export const preventionRoutines = pgTable('prevention_routines', {
 // Carreras/competiciones
 export const races = pgTable('races', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull(), // "Media Maratón Valencia"
   date: date('date').notNull(),
   distance: real('distance').notNull(), // km
@@ -632,3 +701,12 @@ export type Race = typeof races.$inferSelect;
 export type NewRace = typeof races.$inferInsert;
 export type RacePhoto = typeof racePhotos.$inferSelect;
 export type NewRacePhoto = typeof racePhotos.$inferInsert;
+// Auth types
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+export type Account = typeof accounts.$inferSelect;
+export type NewAccount = typeof accounts.$inferInsert;
+export type Session = typeof sessions.$inferSelect;
+export type NewSession = typeof sessions.$inferInsert;
+export type VerificationToken = typeof verificationTokens.$inferSelect;
+export type NewVerificationToken = typeof verificationTokens.$inferInsert;
