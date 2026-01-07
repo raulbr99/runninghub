@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { customHabits } from '@/lib/db/schema';
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, and } from 'drizzle-orm';
+import { requireAuth } from '@/lib/auth';
 
 // GET - Obtener todos los hábitos activos
 export async function GET() {
   try {
+    const userId = await requireAuth();
+
     const habits = await db
       .select()
       .from(customHabits)
-      .where(eq(customHabits.isActive, 1))
+      .where(and(eq(customHabits.userId, userId), eq(customHabits.isActive, 1)))
       .orderBy(asc(customHabits.sortOrder), asc(customHabits.createdAt));
 
     return NextResponse.json(habits);
@@ -22,11 +25,13 @@ export async function GET() {
 // POST - Crear nuevo hábito
 export async function POST(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const data = await request.json();
 
     const [habit] = await db
       .insert(customHabits)
       .values({
+        userId,
         name: data.name,
         description: data.description || null,
         icon: data.icon || '⭐',
@@ -51,6 +56,7 @@ export async function POST(request: NextRequest) {
 // PUT - Actualizar hábito
 export async function PUT(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const data = await request.json();
 
     if (!data.id) {
@@ -69,7 +75,7 @@ export async function PUT(request: NextRequest) {
     const [habit] = await db
       .update(customHabits)
       .set(updateData)
-      .where(eq(customHabits.id, data.id))
+      .where(and(eq(customHabits.id, data.id), eq(customHabits.userId, userId)))
       .returning();
 
     return NextResponse.json(habit);
@@ -82,6 +88,7 @@ export async function PUT(request: NextRequest) {
 // DELETE - Eliminar hábito (soft delete)
 export async function DELETE(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -92,7 +99,7 @@ export async function DELETE(request: NextRequest) {
     await db
       .update(customHabits)
       .set({ isActive: 0, updatedAt: new Date() })
-      .where(eq(customHabits.id, id));
+      .where(and(eq(customHabits.id, id), eq(customHabits.userId, userId)));
 
     return NextResponse.json({ success: true });
   } catch (error) {

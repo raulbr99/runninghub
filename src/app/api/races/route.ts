@@ -1,11 +1,18 @@
 import { db } from '@/lib/db';
 import { races, racePhotos } from '@/lib/db/schema';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, and } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET() {
   try {
-    const allRaces = await db.select().from(races).orderBy(desc(races.date));
+    const userId = await requireAuth();
+
+    const allRaces = await db
+      .select()
+      .from(races)
+      .where(eq(races.userId, userId))
+      .orderBy(desc(races.date));
 
     // Get photos for each race
     const photosMap = new Map<string, typeof racePhotos.$inferSelect[]>();
@@ -33,11 +40,13 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const body = await request.json();
 
     const [newRace] = await db
       .insert(races)
       .values({
+        userId,
         name: body.name,
         date: body.date,
         distance: body.distance,
@@ -69,6 +78,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const body = await request.json();
 
     if (!body.id) {
@@ -99,7 +109,7 @@ export async function PUT(request: NextRequest) {
         status: body.status,
         updatedAt: new Date(),
       })
-      .where(eq(races.id, body.id))
+      .where(and(eq(races.id, body.id), eq(races.userId, userId)))
       .returning();
 
     return NextResponse.json(updated);
@@ -111,6 +121,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -118,7 +129,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID required' }, { status: 400 });
     }
 
-    await db.delete(races).where(eq(races.id, id));
+    await db.delete(races).where(and(eq(races.id, id), eq(races.userId, userId)));
 
     return NextResponse.json({ success: true });
   } catch (error) {

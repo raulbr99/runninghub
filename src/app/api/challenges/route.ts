@@ -3,10 +3,12 @@ import { db } from '@/lib/db';
 import { challenges, userStats, runningEvents, books } from '@/lib/db/schema';
 import { eq, and, gte, lte, sql, desc } from 'drizzle-orm';
 import { CHALLENGE_TEMPLATES } from '@/lib/gamification';
+import { requireAuth } from '@/lib/auth';
 
 // GET - Obtener retos activos y completados
 export async function GET() {
   try {
+    const userId = await requireAuth();
     const today = new Date().toISOString().split('T')[0];
 
     // Retos activos (no completados y no expirados)
@@ -15,6 +17,7 @@ export async function GET() {
       .from(challenges)
       .where(
         and(
+          eq(challenges.userId, userId),
           eq(challenges.completed, 0),
           gte(challenges.endDate, today)
         )
@@ -33,6 +36,7 @@ export async function GET() {
           .from(runningEvents)
           .where(
             and(
+              eq(runningEvents.userId, userId),
               gte(runningEvents.date, challenge.startDate),
               lte(runningEvents.date, challenge.endDate),
               eq(runningEvents.completed, 1)
@@ -47,6 +51,7 @@ export async function GET() {
           .from(runningEvents)
           .where(
             and(
+              eq(runningEvents.userId, userId),
               gte(runningEvents.date, challenge.startDate),
               lte(runningEvents.date, challenge.endDate),
               eq(runningEvents.completed, 1)
@@ -54,12 +59,12 @@ export async function GET() {
           );
         current = Number(result[0]?.count || 0);
       } else if (challenge.type === 'weekly_pages') {
-        // Contar páginas leídas esta semana
         const result = await db
           .select({
             total: sql<number>`coalesce(sum(${books.currentPage}), 0)`,
           })
-          .from(books);
+          .from(books)
+          .where(eq(books.userId, userId));
         current = Number(result[0]?.total || 0);
       }
 
@@ -81,7 +86,8 @@ export async function GET() {
             .set({
               totalXp: sql`${userStats.totalXp} + ${challenge.xpReward}`,
               updatedAt: new Date(),
-            });
+            })
+            .where(eq(userStats.userId, userId));
         }
       }
     }
@@ -92,6 +98,7 @@ export async function GET() {
       .from(challenges)
       .where(
         and(
+          eq(challenges.userId, userId),
           eq(challenges.completed, 0),
           gte(challenges.endDate, today)
         )
@@ -102,7 +109,7 @@ export async function GET() {
     const completedChallenges = await db
       .select()
       .from(challenges)
-      .where(eq(challenges.completed, 1))
+      .where(and(eq(challenges.userId, userId), eq(challenges.completed, 1)))
       .orderBy(desc(challenges.endDate))
       .limit(5);
 
@@ -119,6 +126,7 @@ export async function GET() {
 // POST - Crear nuevo reto o generar retos semanales
 export async function POST(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const data = await request.json();
 
     if (data.generateWeekly) {
@@ -138,6 +146,7 @@ export async function POST(request: NextRequest) {
         .from(challenges)
         .where(
           and(
+            eq(challenges.userId, userId),
             eq(challenges.startDate, startDate),
             eq(challenges.completed, 0)
           )
@@ -157,6 +166,7 @@ export async function POST(request: NextRequest) {
       const distanceTemplate = CHALLENGE_TEMPLATES.find(t => t.type === 'weekly_distance')!;
       const distanceTarget = distanceTemplate.targets[Math.floor(Math.random() * distanceTemplate.targets.length)];
       newChallenges.push({
+        userId,
         type: 'weekly_distance',
         title: `Semana de ${distanceTarget}km`,
         description: `Corre ${distanceTarget}km esta semana`,
@@ -170,6 +180,7 @@ export async function POST(request: NextRequest) {
       const workoutTemplate = CHALLENGE_TEMPLATES.find(t => t.type === 'weekly_workouts')!;
       const workoutTarget = workoutTemplate.targets[Math.floor(Math.random() * workoutTemplate.targets.length)];
       newChallenges.push({
+        userId,
         type: 'weekly_workouts',
         title: `${workoutTarget} entrenamientos`,
         description: `Completa ${workoutTarget} entrenamientos esta semana`,
@@ -183,6 +194,7 @@ export async function POST(request: NextRequest) {
       const readingTemplate = CHALLENGE_TEMPLATES.find(t => t.type === 'weekly_pages')!;
       const readingTarget = readingTemplate.targets[Math.floor(Math.random() * readingTemplate.targets.length)];
       newChallenges.push({
+        userId,
         type: 'weekly_pages',
         title: `Leer ${readingTarget} páginas`,
         description: `Lee ${readingTarget} páginas esta semana`,
@@ -202,6 +214,7 @@ export async function POST(request: NextRequest) {
 
     // Crear reto personalizado
     const newChallenge = await db.insert(challenges).values({
+      userId,
       type: data.type,
       title: data.title,
       description: data.description,

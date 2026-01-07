@@ -1,10 +1,12 @@
 import { db } from '@/lib/db'
 import { calendarEvents, runnerProfile } from '@/lib/db/schema'
-import { gte, lte, eq, and, desc } from 'drizzle-orm'
+import { gte, lte, eq, and } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/auth'
 
 export async function GET() {
   try {
+    const userId = await requireAuth()
     const now = new Date()
 
     // Obtener estadísticas de las últimas 8 semanas
@@ -16,6 +18,7 @@ export async function GET() {
       .from(calendarEvents)
       .where(
         and(
+          eq(calendarEvents.userId, userId),
           gte(calendarEvents.date, eightWeeksAgo.toISOString().split('T')[0]),
           lte(calendarEvents.date, now.toISOString().split('T')[0]),
           eq(calendarEvents.completed, 1)
@@ -63,6 +66,7 @@ export async function GET() {
       .from(calendarEvents)
       .where(
         and(
+          eq(calendarEvents.userId, userId),
           gte(calendarEvents.date, now.toISOString().split('T')[0]),
           eq(calendarEvents.type, 'race')
         )
@@ -71,7 +75,11 @@ export async function GET() {
       .limit(1)
 
     // Obtener perfil para fecha objetivo
-    const [profile] = await db.select().from(runnerProfile).limit(1)
+    const [profile] = await db
+      .select()
+      .from(runnerProfile)
+      .where(eq(runnerProfile.userId, userId))
+      .limit(1)
 
     // PRs del mes actual
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -80,6 +88,7 @@ export async function GET() {
       .from(calendarEvents)
       .where(
         and(
+          eq(calendarEvents.userId, userId),
           gte(calendarEvents.date, monthStart.toISOString().split('T')[0]),
           eq(calendarEvents.completed, 1),
           eq(calendarEvents.category, 'running')

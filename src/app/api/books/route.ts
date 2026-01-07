@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { books, readingLog, userStats } from '@/lib/db/schema';
-import { eq, desc, sql } from 'drizzle-orm';
+import { eq, desc, sql, and } from 'drizzle-orm';
 import { XP_REWARDS } from '@/lib/gamification';
+import { requireAuth } from '@/lib/auth';
 
 // GET - Obtener todos los libros
 export async function GET() {
   try {
+    const userId = await requireAuth();
+
     const allBooks = await db
       .select()
       .from(books)
+      .where(eq(books.userId, userId))
       .orderBy(desc(books.updatedAt));
 
     // Agrupar por estado
@@ -42,9 +46,11 @@ export async function GET() {
 // POST - Añadir nuevo libro
 export async function POST(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const data = await request.json();
 
     const newBook = await db.insert(books).values({
+      userId,
       title: data.title,
       author: data.author,
       totalPages: data.totalPages,
@@ -64,6 +70,7 @@ export async function POST(request: NextRequest) {
 // PUT - Actualizar libro (progreso, estado, etc.)
 export async function PUT(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const data = await request.json();
     const { id, ...updateData } = data;
 
@@ -73,7 +80,7 @@ export async function PUT(request: NextRequest) {
 
     // Si se están actualizando páginas, calcular XP
     if (updateData.currentPage !== undefined) {
-      const [existingBook] = await db.select().from(books).where(eq(books.id, id));
+      const [existingBook] = await db.select().from(books).where(and(eq(books.id, id), eq(books.userId, userId)));
       if (existingBook) {
         const pagesRead = updateData.currentPage - existingBook.currentPage;
         if (pagesRead > 0) {
@@ -94,7 +101,8 @@ export async function PUT(request: NextRequest) {
                 totalXp: sql`${userStats.totalXp} + ${xp}`,
                 totalPagesRead: sql`${userStats.totalPagesRead} + ${pagesRead}`,
                 updatedAt: new Date(),
-              });
+              })
+              .where(eq(userStats.userId, userId));
           }
         }
 
@@ -110,7 +118,8 @@ export async function PUT(request: NextRequest) {
               totalXp: sql`${userStats.totalXp} + ${XP_REWARDS.book_completed}`,
               totalBooksRead: sql`${userStats.totalBooksRead} + 1`,
               updatedAt: new Date(),
-            });
+            })
+            .where(eq(userStats.userId, userId));
         }
 
         // Si empieza a leer
@@ -127,7 +136,7 @@ export async function PUT(request: NextRequest) {
         ...updateData,
         updatedAt: new Date(),
       })
-      .where(eq(books.id, id))
+      .where(and(eq(books.id, id), eq(books.userId, userId)))
       .returning();
 
     return NextResponse.json(updated[0]);
@@ -140,6 +149,7 @@ export async function PUT(request: NextRequest) {
 // DELETE - Eliminar libro
 export async function DELETE(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -147,7 +157,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Book ID required' }, { status: 400 });
     }
 
-    await db.delete(books).where(eq(books.id, id));
+    await db.delete(books).where(and(eq(books.id, id), eq(books.userId, userId)));
 
     return NextResponse.json({ success: true });
   } catch (error) {

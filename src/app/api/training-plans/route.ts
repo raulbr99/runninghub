@@ -1,11 +1,13 @@
 import { db } from '@/lib/db'
 import { trainingPlans, trainingPlanEvents } from '@/lib/db/schema'
-import { desc, eq } from 'drizzle-orm'
+import { desc, eq, and } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/auth'
 
 // GET - Lista de planes
 export async function GET(request: Request) {
   try {
+    const userId = await requireAuth()
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
 
@@ -15,12 +17,13 @@ export async function GET(request: Request) {
       plans = await db
         .select()
         .from(trainingPlans)
-        .where(eq(trainingPlans.status, status))
+        .where(and(eq(trainingPlans.userId, userId), eq(trainingPlans.status, status)))
         .orderBy(desc(trainingPlans.createdAt))
     } else {
       plans = await db
         .select()
         .from(trainingPlans)
+        .where(eq(trainingPlans.userId, userId))
         .orderBy(desc(trainingPlans.createdAt))
     }
 
@@ -34,6 +37,7 @@ export async function GET(request: Request) {
 // POST - Crear plan con eventos
 export async function POST(request: Request) {
   try {
+    const userId = await requireAuth()
     const body = await request.json()
     const { name, raceType, raceDate, level, totalWeeks, totalKm, phases, events } = body
 
@@ -41,6 +45,7 @@ export async function POST(request: Request) {
     const [plan] = await db
       .insert(trainingPlans)
       .values({
+        userId,
         name,
         raceType,
         raceDate,

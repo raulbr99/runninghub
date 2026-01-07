@@ -1,13 +1,17 @@
 import { db } from '@/lib/db';
 import { injuries, injuryLogs } from '@/lib/db/schema';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, and } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET() {
   try {
+    const userId = await requireAuth();
+
     const allInjuries = await db
       .select()
       .from(injuries)
+      .where(eq(injuries.userId, userId))
       .orderBy(desc(injuries.startDate));
 
     // Get logs for each active injury
@@ -36,11 +40,13 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const body = await request.json();
 
     const [newInjury] = await db
       .insert(injuries)
       .values({
+        userId,
         name: body.name,
         bodyPart: body.bodyPart,
         side: body.side,
@@ -77,6 +83,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const body = await request.json();
 
     if (!body.id) {
@@ -101,7 +108,7 @@ export async function PUT(request: NextRequest) {
         daysOff: body.daysOff,
         updatedAt: new Date(),
       })
-      .where(eq(injuries.id, body.id))
+      .where(and(eq(injuries.id, body.id), eq(injuries.userId, userId)))
       .returning();
 
     return NextResponse.json(updated);
@@ -113,6 +120,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -120,7 +128,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID required' }, { status: 400 });
     }
 
-    await db.delete(injuries).where(eq(injuries.id, id));
+    await db.delete(injuries).where(and(eq(injuries.id, id), eq(injuries.userId, userId)));
 
     return NextResponse.json({ success: true });
   } catch (error) {
