@@ -323,11 +323,25 @@ export default function CalendarPage() {
     }
   };
 
-  const calendarDays = [];
+  const calendarDays: { day: number; currentMonth: boolean; isToday: boolean }[] = [];
   for (let i = startDay - 1; i >= 0; i--) calendarDays.push({ day: daysInPrevMonth - i, currentMonth: false, isToday: false });
   for (let i = 1; i <= daysInMonth; i++) calendarDays.push({ day: i, currentMonth: true, isToday: isToday(i) });
   const remainingDays = 42 - calendarDays.length;
   for (let i = 1; i <= remainingDays; i++) calendarDays.push({ day: i, currentMonth: false, isToday: false });
+
+  // Calcular distancia por semana
+  const getWeeklyDistance = (weekIndex: number): number => {
+    const weekDays = calendarDays.slice(weekIndex * 7, (weekIndex + 1) * 7);
+    let total = 0;
+    weekDays.forEach((item) => {
+      if (item.currentMonth) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(item.day).padStart(2, '0')}`;
+        const dayEvents = events.filter(e => e.date === dateStr && e.category === 'running' && e.completed);
+        dayEvents.forEach(e => { total += e.distance || 0; });
+      }
+    });
+    return total;
+  };
 
   // Stats del mes - actividades deportivas
   const sportEvents = events.filter(e => ['running', 'cycling', 'swimming', 'other_sport', 'strength'].includes(e.category) || !e.category);
@@ -395,55 +409,75 @@ export default function CalendarPage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-7">
-          {calendarDays.map((item, index) => {
-            const dayEvents = getEventsForDay(item.day, item.currentMonth);
-            const dateStr = item.currentMonth ? `${year}-${String(month + 1).padStart(2, '0')}-${String(item.day).padStart(2, '0')}` : '';
+        <div>
+          {[0, 1, 2, 3, 4, 5].map((weekIndex) => {
+            const weekDays = calendarDays.slice(weekIndex * 7, (weekIndex + 1) * 7);
+            const weeklyKm = getWeeklyDistance(weekIndex);
+            const isLastWeek = weekIndex === 5;
 
             return (
-              <div
-                key={index}
-                onClick={() => item.currentMonth && openModal(dateStr)}
-                className={`min-h-[80px] sm:min-h-[100px] lg:min-h-[110px] p-1.5 sm:p-2 border-b border-r border-zinc-800/30 cursor-pointer transition-colors hover:bg-zinc-800/30 ${
-                  index % 7 === 6 ? 'border-r-0' : ''
-                } ${index >= 35 ? 'border-b-0' : ''}`}
-              >
-                <div className="flex justify-between items-start">
-                  <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-xs ${
-                    item.isToday
-                      ? 'bg-emerald-500 text-white font-medium'
-                      : item.currentMonth
-                      ? 'text-zinc-300'
-                      : 'text-zinc-700'
-                  }`}>
-                    {item.day}
-                  </span>
-                </div>
-                <div className="mt-1 space-y-0.5">
-                  {dayEvents.map((event) => {
-                    const eventType = getEventType((event.category as EventCategory) || 'running', event.type);
-                    let displayText = eventType.label;
-                    if (event.category === 'personal' || event.category === 'rest') {
-                      displayText = event.title || eventType.label;
-                    } else if (event.distance) {
-                      displayText = `${event.distance}km`;
-                    } else if (event.duration) {
-                      displayText = `${event.duration}'`;
-                    }
+              <div key={weekIndex}>
+                <div className="grid grid-cols-7">
+                  {weekDays.map((item, dayIndex) => {
+                    const globalIndex = weekIndex * 7 + dayIndex;
+                    const dayEvents = getEventsForDay(item.day, item.currentMonth);
+                    const dateStr = item.currentMonth ? `${year}-${String(month + 1).padStart(2, '0')}-${String(item.day).padStart(2, '0')}` : '';
+
                     return (
                       <div
-                        key={event.id}
-                        onClick={(e) => { e.stopPropagation(); openModal(dateStr, event); }}
-                        className={`text-[10px] sm:text-xs p-1 rounded ${eventType.color} text-white truncate ${
-                          event.completed ? 'opacity-100' : 'opacity-50 border border-dashed border-white/30'
-                        }`}
+                        key={globalIndex}
+                        onClick={() => item.currentMonth && openModal(dateStr)}
+                        className={`min-h-[80px] sm:min-h-[100px] lg:min-h-[110px] p-1.5 sm:p-2 border-b border-r border-zinc-800/30 cursor-pointer transition-colors hover:bg-zinc-800/30 ${
+                          dayIndex === 6 ? 'border-r-0' : ''
+                        } ${isLastWeek ? 'border-b-0' : ''}`}
                       >
-                        <span className="hidden sm:inline">{displayText}</span>
-                        <span className="sm:hidden">{event.distance ? `${event.distance}` : ''}</span>
+                        <div className="flex justify-between items-start">
+                          <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-xs ${
+                            item.isToday
+                              ? 'bg-emerald-500 text-white font-medium'
+                              : item.currentMonth
+                              ? 'text-zinc-300'
+                              : 'text-zinc-700'
+                          }`}>
+                            {item.day}
+                          </span>
+                        </div>
+                        <div className="mt-1 space-y-0.5">
+                          {dayEvents.map((event) => {
+                            const eventType = getEventType((event.category as EventCategory) || 'running', event.type);
+                            let displayText = eventType.label;
+                            if (event.category === 'personal' || event.category === 'rest') {
+                              displayText = event.title || eventType.label;
+                            } else if (event.distance) {
+                              displayText = `${event.distance}km`;
+                            } else if (event.duration) {
+                              displayText = `${event.duration}'`;
+                            }
+                            return (
+                              <div
+                                key={event.id}
+                                onClick={(e) => { e.stopPropagation(); openModal(dateStr, event); }}
+                                className={`text-[10px] sm:text-xs p-1 rounded ${eventType.color} text-white truncate ${
+                                  event.completed ? 'opacity-100' : 'opacity-50 border border-dashed border-white/30'
+                                }`}
+                              >
+                                <span className="hidden sm:inline">{displayText}</span>
+                                <span className="sm:hidden">{event.distance ? `${event.distance}` : ''}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     );
                   })}
                 </div>
+                {/* Resumen semanal */}
+                {weeklyKm > 0 && (
+                  <div className={`bg-zinc-800/30 px-3 py-1.5 flex justify-end items-center gap-2 ${!isLastWeek ? 'border-b border-zinc-800/30' : ''}`}>
+                    <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Semana</span>
+                    <span className="text-xs font-mono text-emerald-400">{weeklyKm.toFixed(1)} km</span>
+                  </div>
+                )}
               </div>
             );
           })}
