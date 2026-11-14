@@ -42,6 +42,7 @@ function LoadChange({ row }: { row: ExerciseProgressRow }) {
   if (row.comparability === 'no-load') return <Unknown>Sin kg anotados</Unknown>;
   if (row.comparability === 'mixed-equipment') return <Unknown>No comparable: cambia el equipo</Unknown>;
   if (row.comparability === 'mixed-sides') return <Unknown>No comparable: mezcla series por lado</Unknown>;
+  if (row.comparability === 'mixed-basis') return <Unknown>No comparable: cambia la forma de anotar la carga</Unknown>;
   if (!row.firstLoad || !row.lastLoad) return <Unknown>—</Unknown>;
   if (row.comparability === 'single') {
     return (

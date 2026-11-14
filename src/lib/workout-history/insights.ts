@@ -1,7 +1,7 @@
 // Análisis accionable: carrera, fuerza y progresión por ejercicio en una ventana de tiempo.
 // Solo se usan campos registrados: lo que falta se queda como «sin dato» (null), nunca como 0.
 
-import { exerciseStats, type ExerciseStats, type Period } from './analytics';
+import { exerciseKey, exerciseStats, type ExerciseStats, type Period } from './analytics';
 import { addDays, mondayOf } from './plan';
 import { isRunSession } from './planProgress';
 import type { WorkoutSession } from './types';
@@ -287,7 +287,7 @@ export function strengthBuckets(
 // ---------------------------------------------------------------------------
 // Progresión por ejercicio
 
-export type LoadComparability = 'ok' | 'mixed-equipment' | 'mixed-sides' | 'single' | 'no-load';
+export type LoadComparability = 'ok' | 'mixed-equipment' | 'mixed-sides' | 'mixed-basis' | 'single' | 'no-load';
 
 export interface ExerciseProgressRow {
   key: string;
@@ -315,6 +315,15 @@ function pointLoad(p: ExerciseStats['progression'][number]): number | null {
   return null;
 }
 
+/** Detecta anotaciones de carga que no representan la misma base de comparación. */
+function loadBasis(notes: string | null): string | null {
+  if (!notes) return null;
+  if (/\b(por lado|por cada lado|cada lado)\b/i.test(notes)) return 'per-side';
+  if (/\b(por mancuerna|por mano|cada mancuerna)\b/i.test(notes)) return 'per-implement';
+  if (/\b(peso total|carga total|total entre ambas)\b/i.test(notes)) return 'total';
+  return null;
+}
+
 /**
  * Una fila por ejercicio con actividad en la ventana. El cambio de carga solo se calcula entre
  * sesiones del mismo ejercicio y cuando el tipo de equipo y de serie (bilateral / por lado) no cambia.
@@ -322,19 +331,27 @@ function pointLoad(p: ExerciseStats['progression'][number]): number | null {
 export function exerciseProgressRows(windowSessions: WorkoutSession[], allSessions: WorkoutSession[], from: string): ExerciseProgressRow[] {
   const windowStats = exerciseStats(windowSessions);
   const allStats = new Map(exerciseStats(allSessions).map((s) => [s.key, s]));
+  const sessionById = new Map(allSessions.map((s) => [s.id, s]));
 
   return windowStats.map((st): ExerciseProgressRow => {
     const loaded = st.progression
-      .map((p) => ({ date: p.date, kg: pointLoad(p), sided: p.top === null }))
-      .filter((p): p is { date: string; kg: number; sided: boolean } => p.kg !== null);
+      .map((p) => {
+        const session = sessionById.get(p.sessionId);
+        const exercise = session?.exercises.find((entry) => exerciseKey(entry.name) === st.key);
+        return { date: p.date, kg: pointLoad(p), sided: p.top === null, basis: loadBasis(exercise?.notes ?? null) };
+      })
+      .filter((p): p is { date: string; kg: number; sided: boolean; basis: string | null } => p.kg !== null);
     const first = loaded[0] ?? null;
     const last = loaded[loaded.length - 1] ?? null;
     const mixedSides = loaded.some((p) => p.sided) && loaded.some((p) => !p.sided);
+    const knownBases = new Set(loaded.map((p) => p.basis).filter((basis): basis is string => basis !== null));
+    const mixedBasis = knownBases.size > 1 || (knownBases.size > 0 && loaded.some((p) => p.basis === null));
 
     let comparability: LoadComparability = 'ok';
     if (loaded.length === 0) comparability = 'no-load';
     else if (st.machine && st.freeWeight) comparability = 'mixed-equipment';
     else if (mixedSides) comparability = 'mixed-sides';
+    else if (mixedBasis) comparability = 'mixed-basis';
     else if (loaded.length < 2) comparability = 'single';
 
     const all = allStats.get(st.key) ?? st;
@@ -354,7 +371,7 @@ export function exerciseProgressRows(windowSessions: WorkoutSession[], allSessio
       machine: st.machine,
       equipmentKnown: st.equipment.length > 0,
       best:
-        bestRecord && comparability !== 'mixed-equipment'
+        bestRecord && comparability !== 'mixed-equipment' && comparability !== 'mixed-basis'
           ? { kg: bestRecord.weightKg, reps: bestRecord.reps, date: bestRecord.date, inWindow: bestRecord.date >= from }
           : null,
       bestReps: all.bestReps ? { reps: all.bestReps.reps, date: all.bestReps.date } : null,
