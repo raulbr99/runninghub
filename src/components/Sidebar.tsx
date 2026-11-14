@@ -2,12 +2,52 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+const sections = [
+  { id: 'resumen', label: 'Resumen' },
+  { id: 'plan', label: 'Plan media maratón' },
+  { id: 'calendario', label: 'Calendario' },
+  { id: 'analisis', label: 'Análisis' },
+  { id: 'historial', label: 'Historial' },
+  { id: 'ejercicios', label: 'Ejercicios' },
+] as const;
+type Section = (typeof sections)[number]['id'];
+const isSection = (value: string | null): value is Section => sections.some((section) => section.id === value);
+const SECTION_EVENT = 'runninghub:section-change';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const isActive = pathname === '/historial';
+  const [activeSection, setActiveSection] = useState<Section>('resumen');
+
+  useEffect(() => {
+    const syncFromUrl = () => {
+      const section = new URLSearchParams(window.location.search).get('section');
+      if (isSection(section)) setActiveSection(section);
+      else setActiveSection('resumen');
+    };
+    const onSectionChange = (event: Event) => {
+      const section = (event as CustomEvent<string>).detail;
+      if (isSection(section)) setActiveSection(section);
+    };
+    syncFromUrl();
+    window.addEventListener('popstate', syncFromUrl);
+    window.addEventListener(SECTION_EVENT, onSectionChange);
+    return () => {
+      window.removeEventListener('popstate', syncFromUrl);
+      window.removeEventListener(SECTION_EVENT, onSectionChange);
+    };
+  }, []);
+
+  const selectSection = (section: Section, event: React.MouseEvent<HTMLAnchorElement>) => {
+    setIsOpen(false);
+    setActiveSection(section);
+    if (pathname !== '/historial') return;
+    event.preventDefault();
+    window.history.replaceState(null, '', `/historial?section=${section}`);
+    window.dispatchEvent(new CustomEvent(SECTION_EVENT, { detail: section }));
+  };
 
   return (
     <>
@@ -48,20 +88,27 @@ export default function Sidebar() {
           </div>
         </div>
 
-        <nav aria-label="Navegación principal" className="flex-1 p-3">
-          <Link
-            href="/historial"
-            onClick={() => setIsOpen(false)}
-            aria-current={isActive ? 'page' : undefined}
-            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-              isActive ? 'bg-emerald-500/10 text-emerald-400' : 'text-zinc-300 hover:bg-zinc-800/60 hover:text-white'
-            }`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-            </svg>
-            <span>Historial y estadísticas</span>
-          </Link>
+        <nav aria-label="Navegación principal" className="flex-1 overflow-y-auto p-3">
+          <p className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-600">Entrenamiento</p>
+          <div className="space-y-1">
+            {sections.map((section) => {
+              const active = pathname === '/historial' && activeSection === section.id;
+              return (
+                <Link
+                  key={section.id}
+                  href={`/historial?section=${section.id}`}
+                  onClick={(event) => selectSection(section.id, event)}
+                  aria-current={active ? 'page' : undefined}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                    active ? 'bg-emerald-500/10 text-emerald-400' : 'text-zinc-300 hover:bg-zinc-800/60 hover:text-white'
+                  }`}
+                >
+                  <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${active ? 'bg-emerald-400' : 'bg-zinc-700'}`} />
+                  <span>{section.label}</span>
+                </Link>
+              );
+            })}
+          </div>
         </nav>
 
         <div className="px-4 py-3 border-t border-zinc-800/50">

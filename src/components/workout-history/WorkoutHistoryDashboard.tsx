@@ -62,6 +62,8 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'historial', label: 'Historial' },
   { id: 'ejercicios', label: 'Ejercicios' },
 ];
+const SECTION_EVENT = 'runninghub:section-change';
+const isTab = (value: string | null): value is Tab => TABS.some((item) => item.id === value);
 
 interface Notice {
   kind: 'success' | 'error';
@@ -99,6 +101,24 @@ export default function WorkoutHistoryDashboard() {
       });
     return () => {
       mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const syncFromUrl = () => {
+      const section = new URLSearchParams(window.location.search).get('section');
+      if (isTab(section)) setTab(section);
+    };
+    const onSectionChange = (event: Event) => {
+      const section = (event as CustomEvent<string>).detail;
+      if (isTab(section)) setTab(section);
+    };
+    syncFromUrl();
+    window.addEventListener('popstate', syncFromUrl);
+    window.addEventListener(SECTION_EVENT, onSectionChange);
+    return () => {
+      window.removeEventListener('popstate', syncFromUrl);
+      window.removeEventListener(SECTION_EVENT, onSectionChange);
     };
   }, []);
 
@@ -331,7 +351,11 @@ export default function WorkoutHistoryDashboard() {
                 role="tab"
                 aria-selected={tab === t.id}
                 aria-controls={`panel-${t.id}`}
-                onClick={() => setTab(t.id)}
+                onClick={() => {
+                  setTab(t.id);
+                  window.history.replaceState(null, '', `/historial?section=${t.id}`);
+                  window.dispatchEvent(new CustomEvent(SECTION_EVENT, { detail: t.id }));
+                }}
                 className={`px-3.5 py-2.5 text-sm -mb-px border-b-2 whitespace-nowrap transition-colors ${
                   tab === t.id
                     ? 'border-emerald-500 text-zinc-100'
