@@ -7,6 +7,7 @@ import {
   DOUBLE_DAY_GAP_HOURS,
   REST_DAY,
   STRENGTH_SESSIONS,
+  reducedSets,
   sessionSets,
   strengthPhaseOf,
   type StrengthSession,
@@ -175,11 +176,15 @@ const STRENGTH_ITEM_SUFFIX = ['lun-fuerza', 'mar-fuerza', 'mie-fuerza', 'jue-fue
 function strengthItem(session: StrengthSession, spec: WeekSpec, number: number, start: string, prefix: string): PlanItem {
   const phase = strengthPhaseOf(number);
   const reduced = phase.kind === 'deload' || phase.kind === 'race';
-  const sets = session.exercises.reduce((acc, e) => acc + (reduced ? Math.max(1, e.sets - 1) : e.sets), 0);
+  const sets = sessionSets(session, reduced);
+  // Las sesiones de una serie por ejercicio no pueden bajar más: ahí solo cambia el RIR.
+  const fewerSets = sets < sessionSets(session);
   const raceWeek = spec.race === true;
   // Semana de carrera: jueves y viernes pasan a ser opcionales y el viernes va sin pierna.
   const optional = raceWeek && session.weekday >= 3;
   const noLegs = raceWeek && session.id === 'pierna';
+  const torso = session.exercises.filter((e) => !e.lowerBody);
+  const torsoSets = torso.reduce((acc, e) => acc + (reduced ? reducedSets(e) : e.sets), 0);
   const effort = session.runDay || reduced ? 'RIR 4; sin llegar al fallo' : 'RIR 3; sin llegar al fallo';
 
   const notes: string[] = [];
@@ -191,7 +196,13 @@ function strengthItem(session: StrengthSession, spec: WeekSpec, number: number, 
   else if (session.id === 'pierna') {
     notes.push('Si la tirada del domingo anterior dejó fatiga o la rodilla está sensible, haz solo el torso de esta sesión.');
   }
-  if (phase.kind === 'deload') notes.push('Semana de descarga: una serie menos por ejercicio, misma carga.');
+  if (phase.kind === 'deload') {
+    notes.push(
+      fewerSets
+        ? 'Semana de descarga: una serie menos en los ejercicios de dos o más series, misma carga.'
+        : 'Semana de descarga: mismas series (ya es una por ejercicio), misma carga y sin probar nada nuevo.'
+    );
+  }
 
   return {
     id: `${prefix}-${STRENGTH_ITEM_SUFFIX[session.weekday]}`,
@@ -201,8 +212,8 @@ function strengthItem(session: StrengthSession, spec: WeekSpec, number: number, 
     role: 'strength',
     title: `Fuerza ${session.code} · ${session.name}${optional ? ' (opcional)' : ''}`,
     prescription: noLegs
-      ? `${session.exercises.filter((e) => !e.lowerBody).length} ejercicios de torso · unos 15 min · sin pierna`
-      : `${session.exercises.length} ejercicios · ${sets} series${reduced ? ' (dosis reducida)' : ''} · ${session.duration}`,
+      ? `${torso.length} ejercicios de torso · ${torsoSets} series · unos 10 min · sin pierna`
+      : `${session.exercises.length} ejercicios · ${sets} series${fewerSets ? ' (dosis reducida)' : ''} · ${session.duration}`,
     effort,
     distanceKm: null,
     intervals: null,

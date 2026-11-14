@@ -11,7 +11,10 @@ export interface StrengthExercise {
   alternative: string | null;
   /** Grupo principal, con los mismos nombres que el mapa de músculos */
   target: string;
-  /** Series de trabajo en una semana normal (sin contar aproximaciones) */
+  /**
+   * Series efectivas de trabajo en una semana normal. No incluye aproximaciones,
+   * calentamiento ni movilidad: esas no se cuentan en ningún total del plan.
+   */
   sets: number;
   reps: string;
   rest: string;
@@ -69,18 +72,19 @@ export const STRENGTH_SESSIONS: StrengthSession[] = [
     code: 'A',
     name: 'Empuje: pecho, hombro y tríceps',
     focus: 'Sesión principal de empuje, con un bloque corto de core antirrotación.',
-    duration: '35–45 min',
+    duration: '30–40 min',
     runDay: false,
-    placement: 'El día después de la tirada larga: todo el trabajo es de torso y sentado o apoyado, sin carga en las piernas.',
+    placement: 'El día después de la tirada larga: todo el trabajo es de torso y tumbado, sentado o apoyado, sin carga en las piernas.',
     exercises: [
-      ex('Press inclinado en máquina o con mancuernas', 'Pecho', 3, '8–10', '2 min', '3', {
-        note: 'Ejercicio principal del día: 1–2 series de aproximación antes.',
+      ex('Press banca con barra', 'Pecho', 3, '8–10', '2 min', '3', {
+        alternative: 'Press de pecho en máquina',
+        note: 'Ejercicio principal del día: 1–2 series de aproximación antes, que no cuentan como series de trabajo.',
       }),
-      ex('Press de hombros en máquina', 'Hombro', 2, '10–12', '90 s', '3', { alternative: 'Press de hombros sentado con mancuernas' }),
-      ex('Aperturas de pecho en polea', 'Pecho', 2, '12–15', '60–75 s', '3'),
-      ex('Elevación lateral en polea', 'Hombro', 2, '12–15', '60 s', '3', { alternative: 'Elevaciones laterales con mancuernas' }),
+      ex('Press de hombros sentado con mancuernas', 'Hombro', 2, '10–12', '90 s', '3', { alternative: 'Press de hombros en máquina' }),
+      ex('Aperturas de pecho en polea', 'Pecho', 1, '12–15', '60–75 s', '3', { alternative: 'Aperturas en peck-deck' }),
+      ex('Elevación lateral en polea', 'Hombro', 1, '12–15', '60 s', '3', { alternative: 'Elevaciones laterales con mancuernas' }),
       ex('Extensión de tríceps con cuerda', 'Tríceps', 2, '12–15', '60 s', '3'),
-      ex('Pallof press', 'Core', 2, '10 por lado', '45–60 s', '3–4'),
+      ex('Pallof press', 'Core', 1, '10 por lado', '45–60 s', '3–4'),
     ],
   },
   {
@@ -89,15 +93,15 @@ export const STRENGTH_SESSIONS: StrengthSession[] = [
     day: 'Martes',
     code: 'B',
     name: 'Accesorios de brazo y hombro posterior',
-    focus: 'Sesión corta y ligera de brazos. Nada que deje fatiga para el jueves.',
-    duration: '20–25 min',
+    focus: 'Sesión mínima y ligera de brazos: una serie por ejercicio. Nada que deje fatiga para el jueves.',
+    duration: '10–15 min',
     runDay: true,
     placement: `Día de rodaje: sepárala de la carrera al menos ${DOUBLE_DAY_GAP_HOURS} horas. Si solo cabe una de las dos, se hace la carrera.`,
     exercises: [
-      ex('Face pull con cuerda', 'Hombro', 2, '15', '60 s', '4'),
-      ex('Curl de bíceps en polea baja', 'Bíceps', 2, '12', '60 s', '4', { alternative: 'Curl de bíceps con mancuernas' }),
-      ex('Curl martillo', 'Bíceps', 2, '12', '60 s', '4'),
-      ex('Extensión de tríceps en máquina', 'Tríceps', 2, '12–15', '60 s', '4'),
+      ex('Face pull ligero con cuerda', 'Hombro', 1, '15', '60 s', '4'),
+      ex('Curl de bíceps en polea baja', 'Bíceps', 1, '12', '60 s', '4', { alternative: 'Curl de bíceps con mancuernas' }),
+      ex('Curl martillo', 'Bíceps', 1, '12', '60 s', '4'),
+      ex('Extensión de tríceps en máquina', 'Tríceps', 1, '12–15', '60 s', '4', { alternative: 'Extensión de tríceps en polea' }),
     ],
   },
   {
@@ -107,21 +111,24 @@ export const STRENGTH_SESSIONS: StrengthSession[] = [
     code: 'C',
     name: 'Tirón: espalda y bíceps',
     focus: 'Sesión principal de tirón, con apoyo de pecho para no cargar la zona lumbar.',
-    duration: '35–45 min',
+    duration: '30–40 min',
     runDay: false,
     placement: 'Entre los dos rodajes: torso solamente, para llegar al jueves con las piernas frescas.',
     exercises: [
-      ex('Jalón al pecho con agarre neutro', 'Espalda', 3, '10–12', '2 min', '3', {
-        note: 'Ejercicio principal del día: 1–2 series de aproximación antes.',
+      ex('Jalón al pecho con agarre neutro', 'Espalda', 2, '10–12', '2 min', '3', {
+        note: '1–2 series de aproximación antes, que no cuentan como series de trabajo.',
       }),
-      ex('Remo con pecho apoyado', 'Espalda', 3, '10–12', '90 s–2 min', '3', { alternative: 'Remo sentado en máquina' }),
-      ex('Dominadas asistidas', 'Espalda', 2, '6–10', '2 min', '3', {
+      ex('Remo con pecho apoyado', 'Espalda', 3, '10–12', '90 s–2 min', '3', {
+        alternative: 'Remo sentado en máquina',
+        note: 'Ejercicio principal del día.',
+      }),
+      ex('Dominadas asistidas', 'Espalda', 1, '6–10', '2 min', '3', {
         alternative: 'Jalón al pecho con agarre ancho',
         note: 'Ajusta la asistencia para acabar con margen; no se busca la última repetición.',
       }),
-      ex('Pájaros en peck-deck', 'Hombro', 2, '12–15', '60 s', '3'),
-      ex('Curl predicador con barra EZ', 'Bíceps', 2, '10–12', '60–75 s', '3'),
-      ex('Dead bug', 'Core', 2, '8 por lado', '45 s', '3–4', { alternative: 'Plancha frontal, 30–40 s' }),
+      ex('Pájaros en peck-deck', 'Hombro', 1, '12–15', '60 s', '3'),
+      ex('Curl predicador con barra EZ', 'Bíceps', 1, '10–12', '60–75 s', '3'),
+      ex('Dead bug', 'Core', 1, '8 por lado', '45 s', '3–4', { alternative: 'Plancha frontal, 30–40 s' }),
     ],
   },
   {
@@ -130,20 +137,20 @@ export const STRENGTH_SESSIONS: StrengthSession[] = [
     day: 'Jueves',
     code: 'D',
     name: 'Core y estabilidad de cadera',
-    focus: 'Sesión corta de control de tronco y cadera, pensada para sostener la zancada sin cargar la rodilla.',
-    duration: '20–25 min',
+    focus: 'Sesión mínima de control de tronco y cadera (una serie por ejercicio), pensada para sostener la zancada sin cargar la rodilla.',
+    duration: '10–15 min',
     runDay: true,
     placement: `Día de rodaje: sepárala de la carrera al menos ${DOUBLE_DAY_GAP_HOURS} horas. Si solo cabe una de las dos, se hace la carrera.`,
     exercises: [
-      ex('Pallof press', 'Core', 2, '10 por lado', '45–60 s', '4'),
-      ex('Plancha lateral', 'Core', 2, '20–30 s por lado', '45 s', '4', {
+      ex('Pallof press', 'Core', 1, '10 por lado', '45–60 s', '4'),
+      ex('Plancha lateral', 'Core', 1, '20–30 s por lado', '45 s', '4', {
         note: 'Con las rodillas apoyadas si la versión completa no sale estable.',
       }),
-      ex('Abducción de cadera en máquina', 'Glúteo', 2, '15', '60 s', '4', {
+      ex('Abducción de cadera en máquina', 'Glúteo', 1, '15', '60 s', '4', {
         note: 'Carga ligera y recorrido cómodo; es activación, no trabajo pesado.',
         lowerBody: true,
       }),
-      ex('Elevaciones laterales con mancuernas', 'Hombro', 2, '12–15', '60 s', '4'),
+      ex('Elevaciones laterales con mancuernas', 'Hombro', 1, '12–15', '60 s', '4'),
     ],
   },
   {
@@ -153,23 +160,23 @@ export const STRENGTH_SESSIONS: StrengthSession[] = [
     code: 'E',
     name: 'Pierna de baja fatiga + torso',
     focus: 'Pierna en máquinas con recorrido controlado y dosis mínima, más dos básicos de torso.',
-    duration: '35–45 min',
+    duration: '30–35 min',
     runDay: false,
     placement:
-      'Dos días antes de la tirada larga: solo dos series por ejercicio de pierna, lejos del fallo y sin ejercicios que dejen agujetas (nada de zancadas, saltos ni peso muerto pesado).',
+      'Dos días antes de la tirada larga: una o dos series por ejercicio de pierna, lejos del fallo y sin ejercicios que dejen agujetas (nada de zancadas, saltos ni peso muerto pesado).',
     exercises: [
-      ex('Prensa', 'Cuádriceps', 2, '10–12', '2 min', '3–4', {
-        note: 'Solo el recorrido que la rodilla tolera sin dolor; bajada lenta y sin rebote.',
+      ex('Prensa con recorrido controlado', 'Cuádriceps', 2, '10–12', '2 min', '3–4', {
+        note: 'Carga moderada. Solo el recorrido que la rodilla tolera sin dolor; bajada lenta y sin rebote.',
         lowerBody: true,
       }),
       ex('Curl femoral sentado', 'Isquiotibiales', 2, '10–12', '90 s', '3', { lowerBody: true }),
-      ex('Hip thrust en máquina', 'Glúteo', 2, '8–10', '90 s', '3', { lowerBody: true }),
-      ex('Gemelos de pie', 'Gemelos', 2, '12–15', '60 s', '3', {
+      ex('Hip thrust en máquina', 'Glúteo', 1, '8–10', '90 s', '3', { lowerBody: true }),
+      ex('Gemelos de pie', 'Gemelos', 1, '12–15', '60 s', '3', {
         note: 'Subida y bajada controladas, sin rebotar abajo.',
         lowerBody: true,
       }),
-      ex('Press de pecho en máquina', 'Pecho', 2, '10–12', '90 s', '3', { alternative: 'Press banca con barra, sin apurar' }),
-      ex('Remo sentado', 'Espalda', 2, '10–12', '90 s', '3'),
+      ex('Press de pecho en máquina', 'Pecho', 1, '10–12', '90 s', '3', { alternative: 'Press banca con barra, sin apurar' }),
+      ex('Remo sentado', 'Espalda', 1, '10–12', '90 s', '3'),
     ],
   },
 ];
@@ -184,8 +191,17 @@ export const REST_DAY = {
   detail: 'Sin fuerza y sin carrera. Como mucho, un paseo suave o 10 min de movilidad, para llegar fresco a la tirada larga del domingo.',
 } as const;
 
-export function sessionSets(session: StrengthSession): number {
-  return session.exercises.reduce((acc, e) => acc + e.sets, 0);
+/**
+ * Series de un ejercicio en descarga o semana de carrera: una menos en los ejercicios de
+ * dos o más series; los de una sola serie se quedan en una.
+ */
+export function reducedSets(exercise: StrengthExercise): number {
+  return Math.max(1, exercise.sets - 1);
+}
+
+/** Series efectivas de la sesión; con `reduced`, la dosis de descarga o de semana de carrera. */
+export function sessionSets(session: StrengthSession, reduced = false): number {
+  return session.exercises.reduce((acc, e) => acc + (reduced ? reducedSets(e) : e.sets), 0);
 }
 
 export function sessionLowerBodySets(session: StrengthSession): number {
@@ -208,7 +224,10 @@ export function plannedWeeklyVolume(): PlannedGroupVolume[] {
     .sort((a, b) => b.sets - a.sets || a.target.localeCompare(b.target, 'es'));
 }
 
+/** Series efectivas de una semana normal: suma de las cinco sesiones, sin aproximaciones ni movilidad. */
 export const WEEKLY_STRENGTH_SETS = STRENGTH_SESSIONS.reduce((acc, s) => acc + sessionSets(s), 0);
+/** Series efectivas de una semana de descarga completa. */
+export const DELOAD_STRENGTH_SETS = STRENGTH_SESSIONS.reduce((acc, s) => acc + sessionSets(s, true), 0);
 
 // ---------------------------------------------------------------------------
 // Fases: cómo cambia la dosis de fuerza a lo largo de las 14 semanas
@@ -241,12 +260,12 @@ const PHASES: Record<StrengthPhaseKind, StrengthPhase> = {
   deload: {
     kind: 'deload',
     label: 'Descarga',
-    dose: 'Una serie menos en cada ejercicio (mínimo una) con la misma carga y RIR 4. No se prueban cargas nuevas.',
+    dose: `Una serie menos en los ejercicios de dos o más series; los de una serie se mantienen. Quedan ${DELOAD_STRENGTH_SETS} series en la semana, con la misma carga y RIR 4. No se prueban cargas nuevas.`,
   },
   race: {
     kind: 'race',
     label: 'Semana de carrera',
-    dose: 'Una serie menos en cada ejercicio, RIR 4 y nada nuevo. Jueves y viernes son opcionales y el viernes va sin pierna.',
+    dose: 'Misma reducción que en descarga (una serie menos donde haya dos o más), RIR 4 y nada nuevo. Jueves y viernes son opcionales y el viernes va sin pierna.',
   },
 };
 
@@ -282,7 +301,7 @@ export const STRENGTH_PRINCIPLES: Array<{ title: string; text: string }> = [
   },
   {
     title: 'Viernes al servicio del domingo',
-    text: 'La pierna del viernes es de dosis mínima. Si la tirada larga anterior dejó fatiga o la rodilla está sensible, se hace solo el torso de esa sesión.',
+    text: 'La pierna del viernes es de dosis mínima (una o dos series por ejercicio). Si la tirada larga anterior dejó fatiga o la rodilla está sensible, se hace solo el torso de esa sesión.',
   },
   {
     title: 'Sábado, descanso completo',
@@ -309,7 +328,7 @@ export const STRENGTH_PROGRESSION: Array<{ title: string; text: string }> = [
   },
   {
     title: 'Volumen',
-    text: 'El número de series no sube en las cuatro primeras semanas. Después, como máximo una serie más en los dos ejercicios principales de torso (lunes y miércoles). La pierna se queda en dos series por ejercicio todo el plan.',
+    text: `Se parte de ${WEEKLY_STRENGTH_SETS} series efectivas por semana (sin contar aproximaciones ni movilidad) y el número no sube en las cuatro primeras semanas. Después, y solo si has completado las sesiones con regularidad, como máximo una serie más en los dos ejercicios principales de torso (lunes y miércoles). La pierna no añade series en todo el plan.`,
   },
   {
     title: 'Qué se quita primero',

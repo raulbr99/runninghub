@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { formatDateShort, formatNumber } from '@/lib/workout-history/format';
 import { PLAN_START, RACE_DATE, type PlanItem } from '@/lib/workout-history/plan';
-import { STRENGTH_SESSION_BY_ID, strengthPhaseOf } from '@/lib/workout-history/strengthPlan';
+import { STRENGTH_SESSION_BY_ID, reducedSets, strengthPhaseOf } from '@/lib/workout-history/strengthPlan';
 import type { ItemProgress } from '@/lib/workout-history/planProgress';
 import { Badge, Dialog, ICONS, Icon, buttonPrimary, buttonSecondary, inputClass, labelClass } from './ui';
 import type { PlanTracker } from './usePlanTracker';
@@ -65,7 +65,7 @@ function StrengthExercises({ item }: { item: PlanItem }) {
           <li key={e.name} className="py-1.5 flex flex-wrap items-baseline justify-between gap-x-3">
             <span className="text-zinc-200">{e.name}</span>
             <span className="font-mono text-zinc-300">
-              {reduced ? Math.max(1, e.sets - 1) : e.sets} × {e.reps}
+              {reduced ? reducedSets(e) : e.sets} × {e.reps}
               <span className="font-sans text-zinc-500"> · {e.rest}</span>
             </span>
           </li>

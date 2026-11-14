@@ -130,7 +130,10 @@ export default function StrengthPlanPanel({ tracker }: { tracker: PlanTracker })
           <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3">
             <p className="text-[11px] text-zinc-400 uppercase tracking-wider">Volumen previsto</p>
             <p className="mt-1 text-base text-zinc-100 font-mono">{WEEKLY_STRENGTH_SETS} series/semana</p>
-            <p className="text-xs text-zinc-400">Dosis moderada de partida, con RIR 3. Es lo previsto, no lo registrado.</p>
+            <p className="text-xs text-zinc-400">
+              Dosis conservadora de partida, con RIR 3 (RIR 4 martes y jueves). Solo series efectivas: no cuentan aproximaciones,
+              calentamiento ni movilidad. Es lo previsto, no lo registrado.
+            </p>
           </div>
           <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3">
             <p className="text-[11px] text-zinc-400 uppercase tracking-wider">Fase actual</p>
@@ -145,7 +148,7 @@ export default function StrengthPlanPanel({ tracker }: { tracker: PlanTracker })
               {phase
                 ? phase.dose
                 : tracker.today < PLAN_START
-                  ? 'Las cuatro primeras semanas son de fase Base: series tal como figuran y RIR 3.'
+                  ? 'Las cuatro primeras semanas son de fase Base: series tal como figuran y RIR 3 (RIR 4 martes y jueves).'
                   : 'El bloque de 14 semanas terminó con la media maratón del 21 feb 2027.'}
             </p>
           </div>
