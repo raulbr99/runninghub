@@ -7,8 +7,10 @@ import { useEffect, useState } from 'react';
 const sections = [
   { id: 'resumen', label: 'Resumen' },
   { id: 'plan', label: 'Plan media maratón' },
+  { id: 'fuerza', label: 'Plan de fuerza' },
   { id: 'calendario', label: 'Calendario' },
   { id: 'analisis', label: 'Análisis' },
+  { id: 'musculos', label: 'Músculos' },
   { id: 'historial', label: 'Historial' },
   { id: 'ejercicios', label: 'Ejercicios' },
 ] as const;

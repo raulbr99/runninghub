@@ -50,15 +50,19 @@ import FormatHelp from './FormatHelp';
 import PlanPanel from './PlanPanel';
 import CalendarPanel from './CalendarPanel';
 import InsightsPanel from './InsightsPanel';
+import MuscleMapPanel from './MuscleMapPanel';
+import StrengthPlanPanel from './StrengthPlanPanel';
 import { usePlanTracker } from './usePlanTracker';
 
-type Tab = 'resumen' | 'plan' | 'calendario' | 'analisis' | 'historial' | 'ejercicios';
+type Tab = 'resumen' | 'plan' | 'fuerza' | 'calendario' | 'analisis' | 'musculos' | 'historial' | 'ejercicios';
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'resumen', label: 'Resumen' },
   { id: 'plan', label: 'Plan media maratón' },
+  { id: 'fuerza', label: 'Plan de fuerza' },
   { id: 'calendario', label: 'Calendario' },
   { id: 'analisis', label: 'Análisis' },
+  { id: 'musculos', label: 'Músculos' },
   { id: 'historial', label: 'Historial' },
   { id: 'ejercicios', label: 'Ejercicios' },
 ];
@@ -128,7 +132,8 @@ export default function WorkoutHistoryDashboard() {
   const focusName = exerciseOptions.find((o) => o.key === focusKey)?.name ?? null;
   const filtersActive = hasActiveFilters(filters);
   const tracker = usePlanTracker(sessions);
-  const isPlanTab = tab === 'plan' || tab === 'calendario';
+  // Pestañas con contenido propio: no dependen de los filtros del historial.
+  const isStandaloneTab = tab === 'plan' || tab === 'fuerza' || tab === 'calendario' || tab === 'musculos';
 
   const persist = (next: WorkoutSession[], text: string, undo?: WorkoutSession): boolean => {
     try {
@@ -229,7 +234,7 @@ export default function WorkoutHistoryDashboard() {
             <h1 className="text-xl font-light text-zinc-100 uppercase tracking-wider">Historial de entrenos</h1>
           </div>
           <p className="text-sm text-zinc-400">
-            Sesiones completadas, plan de media maratón, calendario de cumplimiento y análisis de fuerza y carrera.
+            Sesiones completadas, plan de media maratón y de fuerza, calendario de cumplimiento, mapa de músculos y análisis.
           </p>
         </div>
         {snapshot.status === 'ready' && (
@@ -370,9 +375,17 @@ export default function WorkoutHistoryDashboard() {
             ))}
           </div>
 
-          {isPlanTab ? (
+          {isStandaloneTab ? (
             <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`}>
-              {tab === 'plan' ? <PlanPanel tracker={tracker} /> : <CalendarPanel tracker={tracker} sessions={sessions} />}
+              {tab === 'plan' ? (
+                <PlanPanel tracker={tracker} />
+              ) : tab === 'fuerza' ? (
+                <StrengthPlanPanel tracker={tracker} />
+              ) : tab === 'musculos' ? (
+                <MuscleMapPanel sessions={sessions} />
+              ) : (
+                <CalendarPanel tracker={tracker} sessions={sessions} />
+              )}
             </div>
           ) : sessions.length === 0 ? (
             <EmptyState onImport={openFilePicker} onAdd={() => setForm({ open: true, session: null })} />

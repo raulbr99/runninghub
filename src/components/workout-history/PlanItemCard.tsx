@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { formatDateShort, formatNumber } from '@/lib/workout-history/format';
-import { PLAN_START, RACE_DATE } from '@/lib/workout-history/plan';
+import { PLAN_START, RACE_DATE, type PlanItem } from '@/lib/workout-history/plan';
+import { STRENGTH_SESSION_BY_ID, strengthPhaseOf } from '@/lib/workout-history/strengthPlan';
 import type { ItemProgress } from '@/lib/workout-history/planProgress';
 import { Badge, Dialog, ICONS, Icon, buttonPrimary, buttonSecondary, inputClass, labelClass } from './ui';
 import type { PlanTracker } from './usePlanTracker';
@@ -46,6 +47,37 @@ export function PlanStatusBadges({ progress }: { progress: ItemProgress }) {
   );
 }
 
+/** Ejercicios de la sesión de fuerza, con la dosis de la fase de esa semana. */
+function StrengthExercises({ item }: { item: PlanItem }) {
+  const session = item.strengthSession ? STRENGTH_SESSION_BY_ID.get(item.strengthSession) : undefined;
+  if (!session) return null;
+  const phase = strengthPhaseOf(item.week);
+  const reduced = phase.kind === 'deload' || phase.kind === 'race';
+  const noLegs = phase.kind === 'race' && session.id === 'pierna';
+  const exercises = noLegs ? session.exercises.filter((e) => !e.lowerBody) : session.exercises;
+  return (
+    <details className="text-xs text-zinc-400">
+      <summary className="cursor-pointer hover:text-zinc-200 py-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
+        Ver ejercicios ({exercises.length})
+      </summary>
+      <ul className="mt-1 divide-y divide-zinc-800/70">
+        {exercises.map((e) => (
+          <li key={e.name} className="py-1.5 flex flex-wrap items-baseline justify-between gap-x-3">
+            <span className="text-zinc-200">{e.name}</span>
+            <span className="font-mono text-zinc-300">
+              {reduced ? Math.max(1, e.sets - 1) : e.sets} × {e.reps}
+              <span className="font-sans text-zinc-500"> · {e.rest}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-1 text-zinc-500">
+        Fase {phase.label.toLowerCase()}. Detalle, alternativas y progresión en la pestaña «Plan de fuerza».
+      </p>
+    </details>
+  );
+}
+
 interface PlanItemCardProps {
   progress: ItemProgress;
   tracker: PlanTracker;
@@ -76,6 +108,11 @@ export function PlanItemCard({ progress, tracker, onReschedule, showDate = true 
         <div className="min-w-0 space-y-0.5">
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge tone={isRun ? 'cardio' : 'strength'}>{item.role === 'race' ? 'Carrera · objetivo' : isRun ? 'Carrera' : 'Fuerza'}</Badge>
+            {item.sameDayAsRun && !rescheduled && (
+              <Badge tone="neutral" title="Coincide con una carrera prevista el mismo día: sepáralas al menos 6 horas">
+                Día doble
+              </Badge>
+            )}
             {showDate && (
               <span className="text-xs text-zinc-400">
                 {formatDateShort(effectiveDate)}
@@ -87,6 +124,7 @@ export function PlanItemCard({ progress, tracker, onReschedule, showDate = true 
           <p className="text-sm text-zinc-300">{item.prescription}</p>
           <p className="text-xs text-zinc-400">{item.effort}</p>
           {item.note && <p className="text-xs text-zinc-500">{item.note}</p>}
+          {!isRun && <StrengthExercises item={item} />}
         </div>
         <div className="flex flex-wrap items-center gap-1">
           <PlanStatusBadges progress={progress} />

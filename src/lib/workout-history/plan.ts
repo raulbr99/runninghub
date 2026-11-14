@@ -1,6 +1,17 @@
 // Plan Media Maratón Alicante 2027: calendario fijo de 14 semanas.
 // Es contenido estático (no datos registrados). Las distancias, los intervalos y los esfuerzos
 // reproducen el plan acordado; aquí no se definen ritmos objetivo.
+// La fuerza (cinco sesiones, de lunes a viernes) se detalla en strengthPlan.ts.
+
+import {
+  DOUBLE_DAY_GAP_HOURS,
+  REST_DAY,
+  STRENGTH_SESSIONS,
+  sessionSets,
+  strengthPhaseOf,
+  type StrengthSession,
+  type StrengthSessionId,
+} from './strengthPlan';
 
 export const PLAN_ID = 'media-maraton-alicante-2027';
 export const PLAN_NAME = 'Plan Media Maratón Alicante 2027';
@@ -70,7 +81,7 @@ export function formatRange(start: string, end: string): string {
 // Modelo
 
 export type PlanItemKind = 'run' | 'strength';
-export type PlanItemRole = 'easy' | 'controlled' | 'long' | 'race' | 'torso-core' | 'torso-light' | 'full-body';
+export type PlanItemRole = 'easy' | 'controlled' | 'long' | 'race' | 'strength';
 
 export interface PlanItem {
   id: string;
@@ -92,6 +103,16 @@ export interface PlanItem {
   optional: boolean;
   /** La carrera tiene fecha fija y no se puede reprogramar */
   fixedDate: boolean;
+  /** Solo fuerza: sesión del plan de fuerza a la que corresponde */
+  strengthSession: StrengthSessionId | null;
+  /** Solo fuerza: coincide con una carrera prevista el mismo día */
+  sameDayAsRun: boolean;
+}
+
+export interface PlanRestDay {
+  date: string;
+  title: string;
+  detail: string;
 }
 
 export interface PlanWeek {
@@ -107,6 +128,8 @@ export interface PlanWeek {
   /** Km previstos entre semana (martes + jueves) */
   plannedMidweekKm: number;
   plannedSundayKm: number;
+  /** Sábado: descanso completo. No es una sesión: ni se marca ni cuenta en el cumplimiento. */
+  restDay: PlanRestDay;
   items: PlanItem[];
 }
 
@@ -145,25 +168,68 @@ function km(value: number): string {
   return `${String(value).replace('.', ',')} km`;
 }
 
+// Identificadores históricos de las sesiones de fuerza: lunes, miércoles y viernes conservan
+// el suyo para que las marcas y reprogramaciones ya guardadas sigan valiendo.
+const STRENGTH_ITEM_SUFFIX = ['lun-fuerza', 'mar-fuerza', 'mie-fuerza', 'jue-fuerza', 'vie-fuerza'];
+
+function strengthItem(session: StrengthSession, spec: WeekSpec, number: number, start: string, prefix: string): PlanItem {
+  const phase = strengthPhaseOf(number);
+  const reduced = phase.kind === 'deload' || phase.kind === 'race';
+  const sets = session.exercises.reduce((acc, e) => acc + (reduced ? Math.max(1, e.sets - 1) : e.sets), 0);
+  const raceWeek = spec.race === true;
+  // Semana de carrera: jueves y viernes pasan a ser opcionales y el viernes va sin pierna.
+  const optional = raceWeek && session.weekday >= 3;
+  const noLegs = raceWeek && session.id === 'pierna';
+  const effort = session.runDay || reduced ? 'RIR 4; sin llegar al fallo' : 'RIR 3; sin llegar al fallo';
+
+  const notes: string[] = [];
+  if (session.runDay) {
+    notes.push(`Mismo día que la carrera: sepáralas al menos ${DOUBLE_DAY_GAP_HOURS} horas. Si solo cabe una, la carrera.`);
+  }
+  if (noLegs) notes.push('Semana de carrera: solo los ejercicios de torso, o descanso. Nada de pierna a dos días de la media maratón.');
+  else if (optional) notes.push('Semana de carrera: opcional. Ante la duda, descansa.');
+  else if (session.id === 'pierna') {
+    notes.push('Si la tirada del domingo anterior dejó fatiga o la rodilla está sensible, haz solo el torso de esta sesión.');
+  }
+  if (phase.kind === 'deload') notes.push('Semana de descarga: una serie menos por ejercicio, misma carga.');
+
+  return {
+    id: `${prefix}-${STRENGTH_ITEM_SUFFIX[session.weekday]}`,
+    week: number,
+    date: addDays(start, session.weekday),
+    kind: 'strength',
+    role: 'strength',
+    title: `Fuerza ${session.code} · ${session.name}${optional ? ' (opcional)' : ''}`,
+    prescription: noLegs
+      ? `${session.exercises.filter((e) => !e.lowerBody).length} ejercicios de torso · unos 15 min · sin pierna`
+      : `${session.exercises.length} ejercicios · ${sets} series${reduced ? ' (dosis reducida)' : ''} · ${session.duration}`,
+    effort,
+    distanceKm: null,
+    intervals: null,
+    note: notes.length > 0 ? notes.join(' ') : null,
+    optional,
+    fixedDate: false,
+    strengthSession: session.id,
+    sameDayAsRun: session.runDay,
+  };
+}
+
 function buildWeek(spec: WeekSpec, index: number): PlanWeek {
   const number = index + 1;
   const start = addDays(PLAN_START, index * 7);
   const end = addDays(start, 6);
   const prefix = `w${String(number).padStart(2, '0')}`;
-  const base = { week: number, optional: false, fixedDate: false, intervals: null, note: null };
+  const base = {
+    week: number,
+    optional: false,
+    fixedDate: false,
+    intervals: null,
+    note: null,
+    strengthSession: null,
+    sameDayAsRun: false,
+  };
 
-  const items: PlanItem[] = [
-    {
-      ...base,
-      id: `${prefix}-lun-fuerza`,
-      date: start,
-      kind: 'strength',
-      role: 'torso-core',
-      title: 'Fuerza · Torso + core',
-      prescription: 'Torso + core, hasta 1 h. Ejercicios de torso habituales con el volumen justo.',
-      effort: 'Técnica antes que carga; sin llegar al fallo',
-      distanceKm: null,
-    },
+  const runs: PlanItem[] = [
     {
       ...base,
       id: `${prefix}-mar-carrera`,
@@ -174,19 +240,6 @@ function buildWeek(spec: WeekSpec, index: number): PlanWeek {
       prescription: `${km(spec.tue)} fácil`,
       effort: EFFORT_EASY,
       distanceKm: spec.tue,
-    },
-    {
-      ...base,
-      id: `${prefix}-mie-fuerza`,
-      date: addDays(start, 2),
-      kind: 'strength',
-      role: 'torso-light',
-      title: 'Fuerza · Torso breve (opcional)',
-      prescription: 'Torso ligero, 25–30 min, 2 series por ejercicio. Sin trabajo de pierna.',
-      effort: 'RIR 3–4',
-      distanceKm: null,
-      optional: true,
-      note: 'Es la primera sesión que se quita si la carga total afecta al sueño, la energía o las carreras.',
     },
     {
       ...base,
@@ -201,20 +254,6 @@ function buildWeek(spec: WeekSpec, index: number): PlanWeek {
       effort: spec.thuIntervals ? EFFORT_CONTROLLED : spec.thuVeryEasy ? EFFORT_VERY_EASY : EFFORT_EASY,
       distanceKm: spec.thu,
       intervals: spec.thuIntervals ?? null,
-    },
-    {
-      ...base,
-      id: `${prefix}-vie-fuerza`,
-      date: addDays(start, 4),
-      kind: 'strength',
-      role: 'full-body',
-      title: 'Fuerza · General con pierna moderada',
-      prescription: 'Fuerza general, hasta 1 h. Piernas con dosis moderada: 2–3 series por ejercicio.',
-      effort: 'RIR 3; sin llegar al fallo',
-      distanceKm: null,
-      note: spec.race
-        ? 'Semana de carrera: el plan no detalla un ajuste de fuerza. Aplica la regla general: ante la duda, quita las piernas.'
-        : 'Si la tirada del domingo anterior dejó fatiga, quita las piernas esta semana.',
     },
     spec.race
       ? {
@@ -242,6 +281,11 @@ function buildWeek(spec: WeekSpec, index: number): PlanWeek {
           note: spec.sunNote ?? null,
         },
   ];
+  const strength = STRENGTH_SESSIONS.map((session) => strengthItem(session, spec, number, start, prefix));
+  // Orden cronológico; en los días dobles la carrera va primero porque es la prioridad.
+  const items = [...runs, ...strength].sort(
+    (a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0) || Number(a.kind === 'strength') - Number(b.kind === 'strength')
+  );
 
   return {
     number,
@@ -254,6 +298,7 @@ function buildWeek(spec: WeekSpec, index: number): PlanWeek {
     plannedRunKm: Math.round((spec.tue + spec.thu + spec.sun) * 10) / 10,
     plannedMidweekKm: Math.round((spec.tue + spec.thu) * 10) / 10,
     plannedSundayKm: spec.sun,
+    restDay: { date: addDays(start, 5), title: REST_DAY.title, detail: REST_DAY.detail },
     items,
   };
 }
@@ -276,23 +321,21 @@ export interface StrengthSlot {
   title: string;
   detail: string;
   optional: boolean;
+  /** Coincide con una carrera el mismo día */
+  runDay: boolean;
 }
 
 export const STRENGTH_SCHEDULE: StrengthSlot[] = [
-  { day: 'Lunes', title: 'Torso + core', detail: 'Sesión principal de torso, hasta 1 h.', optional: false },
-  {
-    day: 'Miércoles',
-    title: 'Torso breve y ligero',
-    detail: '25–30 min, 2 series por ejercicio, RIR 3–4. Sin trabajo de pierna.',
-    optional: true,
-  },
-  {
-    day: 'Viernes',
-    title: 'Fuerza general, pierna moderada',
-    detail: 'Hasta 1 h. Piernas conservadoras: RIR 3, 2–3 series por ejercicio, sin llegar al fallo.',
+  ...STRENGTH_SESSIONS.map((session) => ({
+    day: session.day,
+    title: `${session.code} · ${session.name}`,
+    detail: `${session.duration} · ${sessionSets(session)} series · ${session.runDay ? 'RIR 4' : 'RIR 3'}.${
+      session.runDay ? ` Separada de la carrera al menos ${DOUBLE_DAY_GAP_HOURS} h.` : ''
+    }`,
     optional: false,
-  },
-  { day: 'Sábado', title: 'Descanso / movilidad', detail: 'Sin carga antes de la tirada larga del domingo.', optional: false },
+    runDay: session.runDay,
+  })),
+  { day: REST_DAY.day, title: REST_DAY.title, detail: REST_DAY.detail, optional: false, runDay: false },
 ];
 
 export const GUARDRAILS: Array<{ title: string; text: string }> = [
@@ -314,6 +357,10 @@ export const GUARDRAILS: Array<{ title: string; text: string }> = [
   },
   {
     title: 'Fuerza al servicio de la carrera',
-    text: 'Si la carga total afecta al sueño, la energía o las carreras, quita primero la sesión del miércoles. Si la tirada del domingo deja fatiga, quita las piernas del viernes esa semana. No hagas ejercicios que provoquen dolor de rodilla.',
+    text: 'Si la carga total afecta al sueño, la energía o las carreras, quita primero las sesiones cortas de martes y jueves. Si la tirada del domingo deja fatiga, quita las piernas del viernes esa semana. No hagas ejercicios que provoquen dolor de rodilla y no lleves ninguna serie al fallo.',
+  },
+  {
+    title: 'Días con carrera y fuerza',
+    text: `Martes y jueves, separa la carrera y la fuerza al menos ${DOUBLE_DAY_GAP_HOURS} horas. El sábado es descanso completo: no se usa para recuperar sesiones.`,
   },
 ];

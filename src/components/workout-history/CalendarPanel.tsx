@@ -242,8 +242,8 @@ export default function CalendarPanel({ tracker, sessions }: CalendarPanelProps)
           value={totals.strengthDue > 0 ? `${totals.strengthDone}/${totals.strengthDue}` : <Unknown>—</Unknown>}
           detail={
             <>
-              <p>{totals.strengthDue > 0 ? 'Lunes y viernes, hechas sobre vencidas' : 'Sin sesiones vencidas todavía'}</p>
-              {totals.optionalDone > 0 && <p className="text-zinc-500">+ {totals.optionalDone} opcionales de miércoles</p>}
+              <p>{totals.strengthDue > 0 ? 'De lunes a viernes, hechas sobre vencidas' : 'Sin sesiones vencidas todavía'}</p>
+              {totals.optionalDone > 0 && <p className="text-zinc-500">+ {totals.optionalDone} opcionales de la semana de carrera</p>}
             </>
           }
         />
@@ -261,8 +261,10 @@ export default function CalendarPanel({ tracker, sessions }: CalendarPanelProps)
 
       <p className="text-xs text-zinc-500">
         Una sesión solo cuenta como no realizada cuando su fecha local ya ha pasado (la de hoy sigue pendiente). Las opcionales
-        del miércoles no cuentan en el cumplimiento. Se considera hecha si hay un registro del mismo tipo ese día —o, si no,
-        otro día de la misma semana— o si la marcas a mano.
+        (fuerza del jueves y el viernes en la semana de carrera) no cuentan en el cumplimiento. Una sesión se considera hecha
+        si hay un registro del mismo tipo ese día —o, si no, otro día de la misma semana— o si la marcas a mano: las carreras
+        solo cubren carreras y la fuerza solo cubre fuerza, y cada registro cubre una única sesión del plan. El sábado es
+        descanso completo y no cuenta.
       </p>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
@@ -325,6 +327,12 @@ export default function CalendarPanel({ tracker, sessions }: CalendarPanelProps)
                             {items.map((p) => (
                               <Marker key={p.item.id} progress={p} />
                             ))}
+                            {i === 5 && items.length === 0 && (
+                              <span className="inline-flex items-center justify-center h-[18px] text-[10px] leading-none text-zinc-600" title="Descanso completo">
+                                <span aria-hidden="true">–</span>
+                                <span className="sr-only">Descanso completo</span>
+                              </span>
+                            )}
                             {extras > 0 && (
                               <span className="text-[10px] leading-none text-zinc-500" title={`${extras} sesión(es) registrada(s) fuera del plan`}>
                                 +{extras}
@@ -354,6 +362,9 @@ export default function CalendarPanel({ tracker, sessions }: CalendarPanelProps)
             </li>
             <li className="inline-flex items-center gap-1">
               <span className={`inline-flex h-[18px] w-4 rounded border ${MARKER_STYLE['optional-unused']}`} /> opcional
+            </li>
+            <li>
+              <span className="text-zinc-200">–</span> descanso
             </li>
             <li>+n registros fuera del plan</li>
           </ul>
@@ -430,9 +441,12 @@ export default function CalendarPanel({ tracker, sessions }: CalendarPanelProps)
                         {s.distanceKm !== null && <span className="font-mono"> · {formatKm(s.distanceKm)}</span>}
                       </p>
                     ))}
-                    {empty && moved.length === 0 && (
-                      <p className="text-xs text-zinc-600 px-1 py-2">{i === 5 ? 'Descanso / movilidad' : 'Sin sesión prevista'}</p>
+                    {i === 5 && (
+                      <p className="text-xs text-zinc-400 rounded-lg border border-dashed border-zinc-800 px-3 py-2">
+                        <span className="text-zinc-200">{week.week.restDay.title}.</span> {week.week.restDay.detail}
+                      </p>
                     )}
+                    {empty && moved.length === 0 && i !== 5 && <p className="text-xs text-zinc-600 px-1 py-2">Sin sesión prevista</p>}
                   </div>
                 </li>
               );

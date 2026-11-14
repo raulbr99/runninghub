@@ -93,7 +93,7 @@ export default function PlanPanel({ tracker }: { tracker: PlanTracker }) {
             </h2>
             <p className="text-sm text-zinc-400">
               Del lunes 16 nov 2026 al domingo 21 feb 2027. Tres carreras por semana (martes, jueves y domingo, con la tirada
-              larga el domingo) y fuerza ajustada alrededor.
+              larga el domingo), cinco sesiones cortas de fuerza de lunes a viernes y el sábado de descanso completo.
             </p>
           </div>
           <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 px-3 py-2 text-sm">
@@ -289,7 +289,14 @@ export default function PlanPanel({ tracker }: { tracker: PlanTracker }) {
                     {wp.items.map((p) => (
                       <PlanItemCard key={p.item.id} progress={p} tracker={tracker} onReschedule={setTarget} />
                     ))}
-                    <p className="text-xs text-zinc-500 px-1">Sábado: descanso o movilidad, sin carga antes del domingo.</p>
+                    <div className="rounded-lg border border-dashed border-zinc-800 px-3 py-2">
+                      <p className="flex flex-wrap items-center gap-1.5 text-sm text-zinc-200">
+                        <Badge tone="neutral">Descanso</Badge>
+                        <span className="text-xs text-zinc-400">{formatDateShort(week.restDay.date)}</span>
+                      </p>
+                      <p className="text-sm text-zinc-300">{week.restDay.title}</p>
+                      <p className="text-xs text-zinc-500">{week.restDay.detail} No se marca ni cuenta en el cumplimiento.</p>
+                    </div>
                   </div>
                 )}
               </li>
@@ -301,7 +308,7 @@ export default function PlanPanel({ tracker }: { tracker: PlanTracker }) {
       <div className="grid gap-4 lg:grid-cols-2">
         <section className={`${cardClass} p-4 space-y-3`} aria-labelledby="plan-strength-title">
           <h3 id="plan-strength-title" className="text-sm font-medium text-zinc-200 uppercase tracking-wider">
-            Fuerza semanal acordada
+            Fuerza semanal: cinco sesiones
           </h3>
           <ul className="divide-y divide-zinc-800/70">
             {STRENGTH_SCHEDULE.map((slot) => (
@@ -311,13 +318,17 @@ export default function PlanPanel({ tracker }: { tracker: PlanTracker }) {
                   <span className="flex flex-wrap items-center gap-1.5 text-zinc-100">
                     {slot.title}
                     {slot.optional && <Badge tone="neutral">Opcional</Badge>}
+                    {slot.runDay && <Badge tone="cardio">Día de carrera</Badge>}
                   </span>
                   <span className="block text-xs text-zinc-400">{slot.detail}</span>
                 </span>
               </li>
             ))}
           </ul>
-          <p className="text-xs text-zinc-500">Martes, jueves y domingo se reservan para correr. Ninguna sesión de fuerza pasa de una hora.</p>
+          <p className="text-xs text-zinc-500">
+            Las carreras de martes, jueves y domingo no cambian. Los ejercicios, series, repeticiones, descansos y la progresión
+            de cada sesión están en la pestaña «Plan de fuerza».
+          </p>
         </section>
 
         <section className={`${cardClass} p-4 space-y-3`} aria-labelledby="plan-guardrails-title">
