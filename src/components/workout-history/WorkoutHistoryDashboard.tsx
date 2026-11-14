@@ -47,11 +47,18 @@ import HistoryList from './HistoryList';
 import OverviewPanel from './OverviewPanel';
 import ExercisesPanel from './ExercisesPanel';
 import FormatHelp from './FormatHelp';
+import PlanPanel from './PlanPanel';
+import CalendarPanel from './CalendarPanel';
+import InsightsPanel from './InsightsPanel';
+import { usePlanTracker } from './usePlanTracker';
 
-type Tab = 'resumen' | 'historial' | 'ejercicios';
+type Tab = 'resumen' | 'plan' | 'calendario' | 'analisis' | 'historial' | 'ejercicios';
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'resumen', label: 'Resumen' },
+  { id: 'plan', label: 'Plan media maratón' },
+  { id: 'calendario', label: 'Calendario' },
+  { id: 'analisis', label: 'Análisis' },
   { id: 'historial', label: 'Historial' },
   { id: 'ejercicios', label: 'Ejercicios' },
 ];
@@ -100,6 +107,8 @@ export default function WorkoutHistoryDashboard() {
   const focusKey = filters.exercise || null;
   const focusName = exerciseOptions.find((o) => o.key === focusKey)?.name ?? null;
   const filtersActive = hasActiveFilters(filters);
+  const tracker = usePlanTracker(sessions);
+  const isPlanTab = tab === 'plan' || tab === 'calendario';
 
   const persist = (next: WorkoutSession[], text: string, undo?: WorkoutSession): boolean => {
     try {
@@ -199,7 +208,9 @@ export default function WorkoutHistoryDashboard() {
             </div>
             <h1 className="text-xl font-light text-zinc-100 uppercase tracking-wider">Historial de entrenos</h1>
           </div>
-          <p className="text-sm text-zinc-400">Sesiones completadas, búsqueda y análisis de fuerza y cardio.</p>
+          <p className="text-sm text-zinc-400">
+            Sesiones completadas, plan de media maratón, calendario de cumplimiento y análisis de fuerza y carrera.
+          </p>
         </div>
         {snapshot.status === 'ready' && (
           <div className="flex flex-wrap gap-2">
@@ -245,8 +256,9 @@ export default function WorkoutHistoryDashboard() {
         <p>
           <span className="text-zinc-100">Historial inicial incluido en este despliegue.</span> Las sesiones base se descargan
           desde el enlace de la web; quien tenga acceso a la URL puede consultarlas. Los cambios que hagas después se guardan
-          solo en el almacenamiento local de este navegador y no aparecen en otros dispositivos. Descarga una{' '}
-          <span className="text-zinc-100">copia JSON</span> de vez en cuando para conservar tus cambios.
+          solo en el almacenamiento local de este navegador y no aparecen en otros dispositivos; lo mismo ocurre con las marcas
+          del plan (sesiones hechas a mano y reprogramaciones), que tienen su propia copia en la pestaña Calendario. Descarga
+          una <span className="text-zinc-100">copia JSON</span> de vez en cuando para conservar tus cambios.
         </p>
       </div>
 
@@ -308,23 +320,9 @@ export default function WorkoutHistoryDashboard() {
         </div>
       )}
 
-      {snapshot.status === 'ready' && sessions.length === 0 && (
-        <EmptyState onImport={openFilePicker} onAdd={() => setForm({ open: true, session: null })} />
-      )}
-
-      {snapshot.status === 'ready' && sessions.length > 0 && (
+      {snapshot.status === 'ready' && (
         <>
-          <FiltersBar
-            filters={filters}
-            exerciseOptions={exerciseOptions}
-            onChange={updateFilters}
-            onReset={() => setFilters(EMPTY_FILTERS)}
-            active={filtersActive}
-            shown={filtered.length}
-            total={sessions.length}
-          />
-
-          <div role="tablist" aria-label="Secciones del historial" className="flex gap-1 border-b border-zinc-800 overflow-x-auto">
+          <div role="tablist" aria-label="Secciones" className="flex gap-1 border-b border-zinc-800 overflow-x-auto">
             {TABS.map((t) => (
               <button
                 key={t.id}
@@ -334,63 +332,87 @@ export default function WorkoutHistoryDashboard() {
                 aria-selected={tab === t.id}
                 aria-controls={`panel-${t.id}`}
                 onClick={() => setTab(t.id)}
-                className={`px-3.5 py-2 text-sm -mb-px border-b-2 whitespace-nowrap transition-colors ${
+                className={`px-3.5 py-2.5 text-sm -mb-px border-b-2 whitespace-nowrap transition-colors ${
                   tab === t.id
                     ? 'border-emerald-500 text-zinc-100'
                     : 'border-transparent text-zinc-400 hover:text-zinc-200'
                 }`}
               >
                 {t.label}
-                {t.id === 'historial' && <span className="ml-1.5 text-xs text-zinc-500">{formatNumber(filtered.length)}</span>}
+                {t.id === 'historial' && sessions.length > 0 && (
+                  <span className="ml-1.5 text-xs text-zinc-500">{formatNumber(filtered.length)}</span>
+                )}
               </button>
             ))}
           </div>
 
-          <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`}>
-            {filtered.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-zinc-800 p-6 text-sm text-zinc-400 text-center space-y-2">
-                <p>Ninguna sesión coincide con los filtros.</p>
-                <button type="button" className="text-emerald-400 hover:text-emerald-300" onClick={() => setFilters(EMPTY_FILTERS)}>
-                  Quitar filtros
-                </button>
-              </div>
-            ) : tab === 'resumen' ? (
-              <OverviewPanel
-                sessions={filtered}
-                allSessions={sessions}
-                focusKey={focusKey}
-                focusName={focusName}
-                period={period}
-                onPeriodChange={setPeriod}
+          {isPlanTab ? (
+            <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`}>
+              {tab === 'plan' ? <PlanPanel tracker={tracker} /> : <CalendarPanel tracker={tracker} sessions={sessions} />}
+            </div>
+          ) : sessions.length === 0 ? (
+            <EmptyState onImport={openFilePicker} onAdd={() => setForm({ open: true, session: null })} />
+          ) : (
+            <>
+              <FiltersBar
+                filters={filters}
+                exerciseOptions={exerciseOptions}
+                onChange={updateFilters}
+                onReset={() => setFilters(EMPTY_FILTERS)}
+                active={filtersActive}
+                shown={filtered.length}
+                total={sessions.length}
               />
-            ) : tab === 'historial' ? (
-              <div className="space-y-3">
-                <div className="flex justify-end">
-                  <label className="flex items-center gap-2 text-xs text-zinc-400">
-                    Orden
-                    <select
-                      value={order}
-                      onChange={(e) => setOrder(e.target.value === 'asc' ? 'asc' : 'desc')}
-                      className={`${inputClass} py-1 w-auto`}
-                    >
-                      <option value="desc">Más recientes primero</option>
-                      <option value="asc">Más antiguas primero</option>
-                    </select>
-                  </label>
-                </div>
-                <HistoryList
-                  sessions={filtered}
-                  order={order}
-                  onEdit={(s) => setForm({ open: true, session: s })}
-                  onDelete={(s) => setDeleteTarget(s)}
-                />
-              </div>
-            ) : (
-              <ExercisesPanel sessions={filtered} focusKey={focusKey} />
-            )}
-          </div>
 
-          <FormatHelp />
+              <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`}>
+                {filtered.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-zinc-800 p-6 text-sm text-zinc-400 text-center space-y-2">
+                    <p>Ninguna sesión coincide con los filtros.</p>
+                    <button type="button" className="text-emerald-400 hover:text-emerald-300" onClick={() => setFilters(EMPTY_FILTERS)}>
+                      Quitar filtros
+                    </button>
+                  </div>
+                ) : tab === 'resumen' ? (
+                  <OverviewPanel
+                    sessions={filtered}
+                    allSessions={sessions}
+                    focusKey={focusKey}
+                    focusName={focusName}
+                    period={period}
+                    onPeriodChange={setPeriod}
+                  />
+                ) : tab === 'analisis' ? (
+                  <InsightsPanel sessions={filtered} period={period} onPeriodChange={setPeriod} />
+                ) : tab === 'historial' ? (
+                  <div className="space-y-3">
+                    <div className="flex justify-end">
+                      <label className="flex items-center gap-2 text-xs text-zinc-400">
+                        Orden
+                        <select
+                          value={order}
+                          onChange={(e) => setOrder(e.target.value === 'asc' ? 'asc' : 'desc')}
+                          className={`${inputClass} py-1 w-auto`}
+                        >
+                          <option value="desc">Más recientes primero</option>
+                          <option value="asc">Más antiguas primero</option>
+                        </select>
+                      </label>
+                    </div>
+                    <HistoryList
+                      sessions={filtered}
+                      order={order}
+                      onEdit={(s) => setForm({ open: true, session: s })}
+                      onDelete={(s) => setDeleteTarget(s)}
+                    />
+                  </div>
+                ) : (
+                  <ExercisesPanel sessions={filtered} focusKey={focusKey} />
+                )}
+              </div>
+
+              <FormatHelp />
+            </>
+          )}
         </>
       )}
 

@@ -104,6 +104,15 @@ export function downloadJsonBackup(sessions: WorkoutSession[]) {
   downloadBlob(JSON.stringify(file, null, 2), `runninghub-historial-${todayLocal()}.json`, 'application/json');
 }
 
+/** Descarga un objeto como archivo JSON generado en el propio navegador. */
+export function downloadJsonFile(data: unknown, filename: string) {
+  downloadBlob(JSON.stringify(data, null, 2), filename, 'application/json');
+}
+
+export function downloadTextFile(text: string, filename: string) {
+  downloadBlob(text, filename, 'application/json');
+}
+
 export function downloadRawText(raw: string) {
   downloadBlob(raw, `runninghub-historial-sin-procesar-${todayLocal()}.json`, 'application/json');
 }
