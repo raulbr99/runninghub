@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
-import ChatPopup from "@/components/ChatPopup";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 const geistSans = Geist({
@@ -16,13 +15,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RunningHub",
-  description: "Centro de control para corredores",
+  title: "Mis entrenamientos",
+  description: "Historial, estadísticas y evolución de tus entrenamientos",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "RunningHub",
+    title: "Mis entrenamientos",
   },
   icons: {
     icon: "/icons/icon-192.png",
@@ -52,7 +51,6 @@ export default function RootLayout({
         <main className="md:ml-64 min-h-screen">
           {children}
         </main>
-        <ChatPopup />
         <ServiceWorkerRegister />
       </body>
     </html>
