@@ -12,6 +12,8 @@ export type HistorySnapshot =
 const LOADING: HistorySnapshot = { status: 'loading' };
 const listeners = new Set<() => void>();
 let cached: HistorySnapshot | null = null;
+const HISTORY_SEED_KEY = 'runninghub.workoutHistory.seed.v1';
+let seedPromise: Promise<void> | null = null;
 
 export function compareSessionsDesc(a: WorkoutSession, b: WorkoutSession): number {
   if (a.date !== b.date) return a.date < b.date ? 1 : -1;
@@ -79,6 +81,45 @@ export function getHistorySnapshot(): HistorySnapshot {
 
 export function getHistoryServerSnapshot(): HistorySnapshot {
   return LOADING;
+}
+
+/** Carga una sola vez el historial inicial publicado y lo fusiona sin sobrescribir datos locales. */
+export function seedHistoryIfNeeded(): Promise<void> {
+  if (seedPromise) return seedPromise;
+  seedPromise = (async () => {
+    if (window.localStorage.getItem(HISTORY_SEED_KEY) === 'loaded') return;
+
+    const raw = window.localStorage.getItem(HISTORY_STORAGE_KEY);
+    let existing: WorkoutSession[] = [];
+    if (raw !== null) {
+      const stored = parseHistoryText(raw);
+      if (!stored.ok || stored.data.invalid.length > 0 || stored.data.sessions.some((s) => s.id === null)) {
+        throw new Error('No pude añadir el historial inicial porque los datos actuales del navegador no se pueden leer. No he modificado nada.');
+      }
+      existing = stored.data.sessions.map((s) => ({ ...s, id: s.id as string }));
+    }
+
+    const response = await fetch('/history-seed.json', { cache: 'force-cache' });
+    if (!response.ok) throw new Error('No se pudo descargar el historial inicial. Recarga la página para intentarlo de nuevo.');
+    const imported = parseHistoryText(await response.text());
+    if (!imported.ok || imported.data.invalid.length > 0 || imported.data.sessions.some((s) => s.id === null)) {
+      throw new Error('El historial inicial publicado no supera la validación; no he cambiado los datos locales.');
+    }
+
+    const ids = new Set(existing.map((s) => s.id));
+    const additions = imported.data.sessions
+      .filter((s) => s.id !== null && !ids.has(s.id))
+      .map((s) => ({ ...s, id: s.id as string }));
+    const sessions = [...existing, ...additions].sort(compareSessionsDesc);
+    window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify({ version: HISTORY_SCHEMA_VERSION, sessions }));
+    window.localStorage.setItem(HISTORY_SEED_KEY, 'loaded');
+    cached = { status: 'ready', sessions };
+    emit();
+  })().catch((error) => {
+    seedPromise = null;
+    throw error;
+  });
+  return seedPromise;
 }
 
 export function buildHistoryFile(sessions: WorkoutSession[], withExportDate: boolean): HistoryFile {

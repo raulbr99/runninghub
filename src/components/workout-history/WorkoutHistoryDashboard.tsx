@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState, useSyncExternalStore, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ChangeEvent } from 'react';
 import {
   EMPTY_FILTERS,
   filterSessions,
@@ -17,6 +17,7 @@ import {
   getHistoryServerSnapshot,
   getHistorySnapshot,
   saveSessions,
+  seedHistoryIfNeeded,
   subscribeHistory,
 } from '@/lib/workout-history/storage';
 import { MAX_IMPORT_BYTES, parseHistoryText } from '@/lib/workout-history/validate';
@@ -65,6 +66,7 @@ const NO_SESSIONS: WorkoutSession[] = [];
 
 export default function WorkoutHistoryDashboard() {
   const snapshot = useSyncExternalStore(subscribeHistory, getHistorySnapshot, getHistoryServerSnapshot);
+  const [seedReady, setSeedReady] = useState(false);
   const sessions = snapshot.status === 'ready' ? snapshot.sessions : NO_SESSIONS;
 
   const [filters, setFilters] = useState<HistoryFilters>(EMPTY_FILTERS);
@@ -78,6 +80,20 @@ export default function WorkoutHistoryDashboard() {
   const [confirmReset, setConfirmReset] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const importNonce = useRef(0);
+
+  useEffect(() => {
+    let mounted = true;
+    void seedHistoryIfNeeded()
+      .catch((error) => {
+        if (mounted) setNotice({ kind: 'error', text: error instanceof Error ? error.message : 'No se pudo cargar el historial inicial.' });
+      })
+      .finally(() => {
+        if (mounted) setSeedReady(true);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const filtered = useMemo(() => filterSessions(sessions, filters), [sessions, filters]);
   const exerciseOptions = useMemo(() => listExercises(sessions), [sessions]);
@@ -227,10 +243,10 @@ export default function WorkoutHistoryDashboard() {
       <div className="flex gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm text-zinc-300">
         <Icon path={ICONS.lock} className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
         <p>
-          <span className="text-zinc-100">Solo en este navegador.</span> Los entrenamientos se guardan en el almacenamiento
-          local (localStorage) de este navegador: no se envían a ningún servidor ni aparecen en otros dispositivos. Si borras
-          los datos del navegador se pierden, así que descarga una <span className="text-zinc-100">copia JSON</span> de vez en
-          cuando; puedes volver a importarla sin duplicar sesiones.
+          <span className="text-zinc-100">Historial inicial incluido en este despliegue.</span> Las sesiones base se descargan
+          desde el enlace de la web; quien tenga acceso a la URL puede consultarlas. Los cambios que hagas después se guardan
+          solo en el almacenamiento local de este navegador y no aparecen en otros dispositivos. Descarga una{' '}
+          <span className="text-zinc-100">copia JSON</span> de vez en cuando para conservar tus cambios.
         </p>
       </div>
 
@@ -261,7 +277,7 @@ export default function WorkoutHistoryDashboard() {
         </div>
       )}
 
-      {snapshot.status === 'loading' && (
+      {(!seedReady || snapshot.status === 'loading') && (
         <div className="py-16 flex justify-center" aria-label="Cargando">
           <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
         </div>
