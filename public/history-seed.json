@@ -7,16 +7,11 @@
       "date": "2026-11-14",
       "title": "Torso ampliado",
       "category": "strength",
-      "status": "complete",
+      "status": "completed",
       "notes": "20 series efectivas. Duración exacta, calentamiento y RIR no registrados.",
       "exercises": [
         {
           "name": "Press banca con barra",
-          "muscleGroups": [
-            "pecho",
-            "tríceps",
-            "hombro"
-          ],
           "sets": [
             {
               "weightKg": 60,
@@ -30,14 +25,11 @@
               "weightKg": 60,
               "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "pecho, tríceps, hombro"
         },
         {
           "name": "Remo con pecho apoyado",
-          "muscleGroups": [
-            "espalda",
-            "bíceps"
-          ],
           "sets": [
             {
               "weightKg": 42.5,
@@ -51,76 +43,58 @@
               "weightKg": 50,
               "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "espalda, bíceps"
         },
         {
           "name": "Dominadas asistidas",
-          "muscleGroups": [
-            "espalda",
-            "bíceps"
-          ],
           "sets": [
             {
-              "assistanceKg": 70,
               "reps": 10
             },
             {
-              "assistanceKg": 70,
               "reps": 8
             }
-          ]
+          ],
+          "muscleGroup": "espalda, bíceps",
+          "notes": "Serie 1: asistencia 70 kg · Serie 2: asistencia 70 kg"
         },
         {
           "name": "Press hombro con mancuernas",
-          "muscleGroups": [
-            "hombro",
-            "tríceps"
-          ],
           "sets": [
             {
               "weightKg": 15,
-              "reps": 12,
-              "loadMode": "per_dumbbell",
-              "note": "fácil"
+              "reps": 12
             },
             {
               "weightKg": 20,
-              "reps": 12,
-              "loadMode": "per_dumbbell",
-              "note": "costó, limpia"
+              "reps": 12
             },
             {
               "weightKg": 20,
-              "reps": 8,
-              "loadMode": "per_dumbbell",
-              "note": "limpias"
+              "reps": 8
             }
-          ]
+          ],
+          "muscleGroup": "hombro, tríceps",
+          "notes": "Serie 1: peso por mancuerna; fácil · Serie 2: peso por mancuerna; costó, limpia · Serie 3: peso por mancuerna; limpias"
         },
         {
           "name": "Elevaciones laterales",
-          "muscleGroups": [
-            "hombro"
-          ],
           "sets": [
             {
               "weightKg": 10,
-              "reps": 12,
-              "loadMode": "per_side"
+              "reps": 12
             },
             {
               "weightKg": 10,
-              "reps": 12,
-              "loadMode": "per_side"
+              "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "hombro",
+          "notes": "Serie 1: peso por lado · Serie 2: peso por lado"
         },
         {
           "name": "Face pull con cuerda",
-          "muscleGroups": [
-            "hombro",
-            "espalda"
-          ],
           "sets": [
             {
               "weightKg": 30,
@@ -134,13 +108,11 @@
               "weightKg": 30,
               "reps": 15
             }
-          ]
+          ],
+          "muscleGroup": "hombro, espalda"
         },
         {
           "name": "Curl de bíceps",
-          "muscleGroups": [
-            "bíceps"
-          ],
           "sets": [
             {
               "weightKg": 12,
@@ -150,13 +122,11 @@
               "weightKg": 12,
               "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "bíceps"
         },
         {
           "name": "Extensión de tríceps con cuerda",
-          "muscleGroups": [
-            "tríceps"
-          ],
           "sets": [
             {
               "weightKg": 22.5,
@@ -166,24 +136,22 @@
               "weightKg": 22.5,
               "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "tríceps"
         }
-      ]
+      ],
+      "type": "strength"
     },
     {
       "id": "2026-11-13-pierna",
       "date": "2026-11-13",
       "title": "Pierna moderada",
       "category": "strength",
-      "status": "complete",
+      "status": "completed",
       "notes": "13 series efectivas; faltan reps de la tercera serie de curl femoral. Solo una serie de patada de glúteo. RIR y molestias no anotados.",
       "exercises": [
         {
           "name": "Prensa",
-          "muscleGroups": [
-            "cuádriceps",
-            "glúteo"
-          ],
           "sets": [
             {
               "weightKg": 80,
@@ -195,40 +163,33 @@
             },
             {
               "weightKg": 120,
-              "reps": 10,
-              "note": "costó, completada"
+              "reps": 10
             }
-          ]
+          ],
+          "muscleGroup": "cuádriceps, glúteo",
+          "notes": "Serie 3: costó, completada"
         },
         {
           "name": "Peso muerto rumano",
-          "muscleGroups": [
-            "isquiotibiales",
-            "glúteo"
-          ],
           "sets": [
             {
               "weightKg": 40,
-              "reps": 12,
-              "loadMode": "total"
+              "reps": 12
             },
             {
               "weightKg": 40,
-              "reps": 12,
-              "loadMode": "total"
+              "reps": 12
             },
             {
               "weightKg": 40,
-              "reps": 12,
-              "loadMode": "total"
+              "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "isquiotibiales, glúteo",
+          "notes": "Serie 1: peso total · Serie 2: peso total · Serie 3: peso total"
         },
         {
           "name": "Curl femoral sentado",
-          "muscleGroups": [
-            "isquiotibiales"
-          ],
           "sets": [
             {
               "weightKg": 22.5,
@@ -240,29 +201,25 @@
             },
             {
               "weightKg": 22.5,
-              "reps": null,
-              "note": "serie completada; reps desconocidas"
+              "reps": null
             }
-          ]
+          ],
+          "muscleGroup": "isquiotibiales",
+          "notes": "Serie 3: serie completada; reps desconocidas"
         },
         {
           "name": "Patada de glúteo",
-          "muscleGroups": [
-            "glúteo"
-          ],
           "sets": [
             {
               "weightKg": null,
-              "reps": null,
-              "note": "una serie; carga y reps no anotadas"
+              "reps": null
             }
-          ]
+          ],
+          "muscleGroup": "glúteo",
+          "notes": "Serie 1: una serie; carga y reps no anotadas"
         },
         {
           "name": "Gemelos de pie",
-          "muscleGroups": [
-            "gemelos"
-          ],
           "sets": [
             {
               "weightKg": 50,
@@ -276,23 +233,22 @@
               "weightKg": 50,
               "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "gemelos"
         }
-      ]
+      ],
+      "type": "strength"
     },
     {
       "id": "2026-11-11-torso-core",
       "date": "2026-11-11",
       "title": "Torso + core",
       "category": "strength",
-      "status": "complete",
+      "status": "completed",
       "notes": "23 de 24 series planificadas; no consta calentamiento ni RIR. Tonnage aproximado en el diario, no se usa como medida comparable entre máquinas.",
       "exercises": [
         {
           "name": "Aperturas de pecho en polea",
-          "muscleGroups": [
-            "pecho"
-          ],
           "sets": [
             {
               "weightKg": 17.5,
@@ -306,14 +262,11 @@
               "weightKg": 22.5,
               "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "pecho"
         },
         {
           "name": "Remo con apoyo de pecho",
-          "muscleGroups": [
-            "espalda",
-            "bíceps"
-          ],
           "sets": [
             {
               "weightKg": 42.5,
@@ -327,14 +280,11 @@
               "weightKg": 50,
               "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "espalda, bíceps"
         },
         {
           "name": "Jalón neutro",
-          "muscleGroups": [
-            "espalda",
-            "bíceps"
-          ],
           "sets": [
             {
               "weightKg": 52.5,
@@ -348,37 +298,30 @@
               "weightKg": 52.5,
               "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "espalda, bíceps"
         },
         {
           "name": "Elevación lateral en polea",
-          "muscleGroups": [
-            "hombro"
-          ],
           "sets": [
             {
               "weightKg": 5,
-              "reps": 12,
-              "loadMode": "per_side"
+              "reps": 12
             },
             {
               "weightKg": 7.5,
-              "reps": 12,
-              "loadMode": "per_side"
+              "reps": 12
             },
             {
               "weightKg": 10,
-              "reps": 12,
-              "loadMode": "per_side"
+              "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "hombro",
+          "notes": "Serie 1: peso por lado · Serie 2: peso por lado · Serie 3: peso por lado"
         },
         {
           "name": "Pájaros en peck-deck",
-          "muscleGroups": [
-            "hombro",
-            "espalda"
-          ],
           "sets": [
             {
               "weightKg": 10,
@@ -392,13 +335,11 @@
               "weightKg": 10,
               "reps": 10
             }
-          ]
+          ],
+          "muscleGroup": "hombro, espalda"
         },
         {
           "name": "Curl de bíceps en polea baja",
-          "muscleGroups": [
-            "bíceps"
-          ],
           "sets": [
             {
               "weightKg": 10,
@@ -412,13 +353,11 @@
               "weightKg": 12.5,
               "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "bíceps"
         },
         {
           "name": "Extensión de tríceps con cuerda",
-          "muscleGroups": [
-            "tríceps"
-          ],
           "sets": [
             {
               "weightKg": 22.5,
@@ -432,27 +371,26 @@
               "weightKg": 22.5,
               "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "tríceps"
         },
         {
           "name": "Pallof press",
-          "muscleGroups": [
-            "core"
-          ],
           "sets": [
             {
               "weightKg": 12.5,
-              "reps": 10,
-              "loadMode": "per_side"
+              "reps": 10
             },
             {
               "weightKg": 12.5,
-              "reps": 10,
-              "loadMode": "per_side"
+              "reps": 10
             }
-          ]
+          ],
+          "muscleGroup": "core",
+          "notes": "Serie 1: peso por lado · Serie 2: peso por lado"
         }
-      ]
+      ],
+      "type": "strength"
     },
     {
       "id": "2026-11-04-torso-partial",
@@ -464,17 +402,10 @@
       "exercises": [
         {
           "name": "Press banca inclinado",
-          "muscleGroups": [
-            "pecho",
-            "hombro",
-            "tríceps"
-          ],
           "sets": [
             {
               "weightKg": 15,
-              "reps": 12,
-              "loadMode": "per_side",
-              "note": "fácil"
+              "reps": 12
             },
             {
               "weightKg": 60,
@@ -484,9 +415,12 @@
               "weightKg": 60,
               "reps": 10
             }
-          ]
+          ],
+          "muscleGroup": "pecho, hombro, tríceps",
+          "notes": "Serie 1: peso por lado; fácil"
         }
-      ]
+      ],
+      "type": "strength"
     },
     {
       "id": "strava-20880239657",
@@ -506,16 +440,11 @@
       "date": "2026-11-02",
       "title": "Torso + core",
       "category": "strength",
-      "status": "complete",
+      "status": "completed",
       "notes": "16 series efectivas. Calentamientos no contabilizados.",
       "exercises": [
         {
           "name": "Press banca",
-          "muscleGroups": [
-            "pecho",
-            "tríceps",
-            "hombro"
-          ],
           "sets": [
             {
               "weightKg": 70,
@@ -529,14 +458,11 @@
               "weightKg": 70,
               "reps": 8
             }
-          ]
+          ],
+          "muscleGroup": "pecho, tríceps, hombro"
         },
         {
           "name": "Remo sentado",
-          "muscleGroups": [
-            "espalda",
-            "bíceps"
-          ],
           "sets": [
             {
               "weightKg": 50,
@@ -550,70 +476,56 @@
               "weightKg": 50,
               "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "espalda, bíceps"
         },
         {
           "name": "Press de hombros con mancuernas",
-          "muscleGroups": [
-            "hombro",
-            "tríceps"
-          ],
           "sets": [
             {
               "weightKg": 15,
-              "reps": 12,
-              "loadMode": "per_dumbbell"
+              "reps": 12
             },
             {
               "weightKg": 15,
-              "reps": 12,
-              "loadMode": "per_dumbbell"
+              "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "hombro, tríceps",
+          "notes": "Serie 1: peso por mancuerna · Serie 2: peso por mancuerna"
         },
         {
           "name": "Jalón al pecho",
-          "muscleGroups": [
-            "espalda",
-            "bíceps"
-          ],
           "sets": [
             {
               "weightKg": 52.5,
-              "reps": 12,
-              "note": "fácil"
+              "reps": 12
             },
             {
               "weightKg": 60,
-              "reps": 10,
-              "note": "limpias"
+              "reps": 10
             }
-          ]
+          ],
+          "muscleGroup": "espalda, bíceps",
+          "notes": "Serie 1: fácil · Serie 2: limpias"
         },
         {
           "name": "Curl martillo",
-          "muscleGroups": [
-            "bíceps",
-            "antebrazo"
-          ],
           "sets": [
             {
               "weightKg": 10,
-              "reps": 12,
-              "loadMode": "per_dumbbell"
+              "reps": 12
             },
             {
               "weightKg": 10,
-              "reps": 12,
-              "loadMode": "per_dumbbell"
+              "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "bíceps, antebrazo",
+          "notes": "Serie 1: peso por mancuerna · Serie 2: peso por mancuerna"
         },
         {
           "name": "Extensión de tríceps",
-          "muscleGroups": [
-            "tríceps"
-          ],
           "sets": [
             {
               "weightKg": 22.5,
@@ -623,27 +535,26 @@
               "weightKg": 22.5,
               "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "tríceps"
         },
         {
           "name": "Pallof press",
-          "muscleGroups": [
-            "core"
-          ],
           "sets": [
             {
               "weightKg": 17.5,
-              "reps": 10,
-              "loadMode": "per_side"
+              "reps": 10
             },
             {
               "weightKg": 17.5,
-              "reps": 10,
-              "loadMode": "per_side"
+              "reps": 10
             }
-          ]
+          ],
+          "muscleGroup": "core",
+          "notes": "Serie 1: peso por lado · Serie 2: peso por lado"
         }
-      ]
+      ],
+      "type": "strength"
     },
     {
       "id": "strava-20822145640",
@@ -668,35 +579,25 @@
       "exercises": [
         {
           "name": "Press inclinado con mancuernas",
-          "muscleGroups": [
-            "pecho",
-            "hombro",
-            "tríceps"
-          ],
           "sets": [
             {
               "weightKg": 25,
-              "reps": 12,
-              "loadMode": "per_dumbbell"
+              "reps": 12
             },
             {
               "weightKg": 25,
-              "reps": 12,
-              "loadMode": "per_dumbbell"
+              "reps": 12
             },
             {
               "weightKg": 25,
-              "reps": 12,
-              "loadMode": "per_dumbbell"
+              "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "pecho, hombro, tríceps",
+          "notes": "Serie 1: peso por mancuerna · Serie 2: peso por mancuerna · Serie 3: peso por mancuerna"
         },
         {
           "name": "Remo sentado agarre neutro",
-          "muscleGroups": [
-            "espalda",
-            "bíceps"
-          ],
           "sets": [
             {
               "weightKg": 50,
@@ -710,42 +611,34 @@
               "weightKg": 50,
               "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "espalda, bíceps"
         },
         {
           "name": "Elevaciones laterales sentado",
-          "muscleGroups": [
-            "hombro"
-          ],
           "sets": [
             {
               "weightKg": 7.5,
-              "reps": 12,
-              "loadMode": "per_dumbbell"
+              "reps": 12
             },
             {
               "weightKg": 7.5,
-              "reps": 12,
-              "loadMode": "per_dumbbell"
+              "reps": 12
             },
             {
               "weightKg": 7.5,
-              "reps": 10,
-              "loadMode": "per_dumbbell"
+              "reps": 10
             }
-          ]
+          ],
+          "muscleGroup": "hombro",
+          "notes": "Serie 1: peso por mancuerna · Serie 2: peso por mancuerna · Serie 3: peso por mancuerna"
         },
         {
           "name": "Jalón al pecho neutro",
-          "muscleGroups": [
-            "espalda",
-            "bíceps"
-          ],
           "sets": [
             {
               "weightKg": 52.5,
-              "reps": 12,
-              "note": "fácil"
+              "reps": 12
             },
             {
               "weightKg": 60,
@@ -753,49 +646,44 @@
             },
             {
               "weightKg": 60,
-              "reps": 12,
-              "note": "última cerca del límite"
+              "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "espalda, bíceps",
+          "notes": "Serie 1: fácil · Serie 3: última cerca del límite"
         },
         {
           "name": "Face pull",
-          "muscleGroups": [
-            "hombro",
-            "espalda"
-          ],
           "sets": [
             {
               "weightKg": 20,
-              "reps": 15,
-              "note": "fácil"
+              "reps": 15
             },
             {
               "weightKg": 25,
               "reps": 15
             }
-          ]
+          ],
+          "muscleGroup": "hombro, espalda",
+          "notes": "Serie 1: fácil"
         },
         {
           "name": "Curl martillo sentado",
-          "muscleGroups": [
-            "bíceps",
-            "antebrazo"
-          ],
           "sets": [
             {
               "weightKg": 10,
-              "reps": 12,
-              "loadMode": "per_dumbbell"
+              "reps": 12
             },
             {
               "weightKg": 10,
-              "reps": 12,
-              "loadMode": "per_dumbbell"
+              "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "bíceps, antebrazo",
+          "notes": "Serie 1: peso por mancuerna · Serie 2: peso por mancuerna"
         }
-      ]
+      ],
+      "type": "strength"
     },
     {
       "id": "strava-20774649291",
@@ -815,89 +703,68 @@
       "date": "2026-10-28",
       "title": "Pierna moderada",
       "category": "strength",
-      "status": "complete",
+      "status": "completed",
       "notes": "14 series efectivas y 7 min de bici suave. Sin molestia de rodilla durante la sesión.",
       "exercises": [
         {
           "name": "Prensa",
-          "muscleGroups": [
-            "cuádriceps",
-            "glúteo"
-          ],
           "sets": [
             {
               "weightKg": 20,
-              "reps": 10,
-              "loadMode": "per_side",
-              "effort": "RPE 4"
+              "reps": 10
             },
             {
               "weightKg": 25,
-              "reps": 12,
-              "loadMode": "per_side",
-              "effort": "RPE 5"
+              "reps": 12
             },
             {
               "weightKg": 30,
-              "reps": 12,
-              "loadMode": "per_side",
-              "effort": "RPE 6"
+              "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "cuádriceps, glúteo",
+          "notes": "Serie 1: peso por lado; RPE 4 · Serie 2: peso por lado; RPE 5 · Serie 3: peso por lado; RPE 6"
         },
         {
           "name": "Peso muerto rumano",
-          "muscleGroups": [
-            "isquiotibiales",
-            "glúteo"
-          ],
           "sets": [
             {
               "weightKg": 40,
-              "reps": 12,
-              "loadMode": "total",
-              "effort": "RPE 6"
+              "reps": 12
             },
             {
               "weightKg": 40,
-              "reps": 10,
-              "loadMode": "total"
+              "reps": 10
             },
             {
               "weightKg": 40,
-              "reps": 10,
-              "loadMode": "total"
+              "reps": 10
             }
-          ]
+          ],
+          "muscleGroup": "isquiotibiales, glúteo",
+          "notes": "Serie 1: peso total; RPE 6 · Serie 2: peso total · Serie 3: peso total"
         },
         {
           "name": "Curl femoral sentado",
-          "muscleGroups": [
-            "isquiotibiales"
-          ],
           "sets": [
             {
               "weightKg": 22.5,
-              "reps": 12,
-              "effort": "RPE 6"
+              "reps": 12
             },
             {
               "weightKg": 22.5,
-              "reps": 12,
-              "effort": "RPE 7"
+              "reps": 12
             },
             {
               "weightKg": 22.5,
-              "reps": 10,
-              "effort": "RPE 7"
+              "reps": 10
             }
-          ]
+          ],
+          "muscleGroup": "isquiotibiales",
+          "notes": "Serie 1: RPE 6 · Serie 2: RPE 7 · Serie 3: RPE 7"
         },
         {
           "name": "Hip thrust en máquina",
-          "muscleGroups": [
-            "glúteo"
-          ],
           "sets": [
             {
               "weightKg": 10,
@@ -905,21 +772,18 @@
             },
             {
               "weightKg": 20,
-              "reps": 8,
-              "effort": "RPE 7"
+              "reps": 8
             },
             {
               "weightKg": 20,
-              "reps": 8,
-              "effort": "RPE 7"
+              "reps": 8
             }
-          ]
+          ],
+          "muscleGroup": "glúteo",
+          "notes": "Serie 2: RPE 7 · Serie 3: RPE 7"
         },
         {
           "name": "Gemelo sentado",
-          "muscleGroups": [
-            "gemelos"
-          ],
           "sets": [
             {
               "weightKg": 30,
@@ -929,9 +793,11 @@
               "weightKg": 30,
               "reps": 15
             }
-          ]
+          ],
+          "muscleGroup": "gemelos"
         }
-      ]
+      ],
+      "type": "strength"
     },
     {
       "id": "2026-10-27-carrera-facil",
@@ -951,21 +817,15 @@
       "date": "2026-10-26",
       "title": "Torso + core moderado",
       "category": "strength",
-      "status": "complete",
+      "status": "completed",
       "notes": "16 series efectivas más 2 aproximaciones de banca. Algunas marcas de selector de máquina no confirmadas; calentamientos excluidos del cómputo.",
       "exercises": [
         {
           "name": "Press banca",
-          "muscleGroups": [
-            "pecho",
-            "tríceps",
-            "hombro"
-          ],
           "sets": [
             {
               "weightKg": 70,
-              "reps": 10,
-              "effort": "RPE 6"
+              "reps": 10
             },
             {
               "weightKg": 70,
@@ -975,19 +835,16 @@
               "weightKg": 70,
               "reps": 8
             }
-          ]
+          ],
+          "muscleGroup": "pecho, tríceps, hombro",
+          "notes": "Serie 1: RPE 6"
         },
         {
           "name": "Remo sentado E-Gym",
-          "muscleGroups": [
-            "espalda",
-            "bíceps"
-          ],
           "sets": [
             {
               "weightKg": 42.5,
-              "reps": 15,
-              "note": "con margen"
+              "reps": 15
             },
             {
               "weightKg": 50,
@@ -997,69 +854,57 @@
               "weightKg": 50,
               "reps": 10
             }
-          ]
+          ],
+          "muscleGroup": "espalda, bíceps",
+          "notes": "Serie 1: con margen"
         },
         {
           "name": "Press hombro con mancuernas",
-          "muscleGroups": [
-            "hombro",
-            "tríceps"
-          ],
           "sets": [
             {
               "weightKg": 15,
-              "reps": 12,
-              "loadMode": "per_dumbbell"
+              "reps": 12
             },
             {
               "weightKg": 15,
-              "reps": 12,
-              "loadMode": "per_dumbbell"
+              "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "hombro, tríceps",
+          "notes": "Serie 1: peso por mancuerna · Serie 2: peso por mancuerna"
         },
         {
           "name": "Jalón al pecho",
-          "muscleGroups": [
-            "espalda",
-            "bíceps"
-          ],
           "sets": [
             {
               "weightKg": null,
-              "reps": 14,
-              "note": "selector alrededor de 70 kg; valor exacto no confirmado"
+              "reps": 14
             },
             {
               "weightKg": null,
-              "reps": 12,
-              "note": "selector alrededor de 70 kg; valor exacto no confirmado"
+              "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "espalda, bíceps",
+          "notes": "Serie 1: selector alrededor de 70 kg; valor exacto no confirmado · Serie 2: selector alrededor de 70 kg; valor exacto no confirmado"
         },
         {
           "name": "Curl predicador EZ",
-          "muscleGroups": [
-            "bíceps"
-          ],
           "sets": [
             {
               "weightKg": null,
-              "reps": 12,
-              "note": "5 kg por lado"
+              "reps": 12
             },
             {
               "weightKg": null,
-              "reps": 12,
-              "note": "5 kg por lado"
+              "reps": 12
             }
-          ]
+          ],
+          "muscleGroup": "bíceps",
+          "notes": "Serie 1: 5 kg por lado · Serie 2: 5 kg por lado"
         },
         {
           "name": "Extensión de tríceps en máquina",
-          "muscleGroups": [
-            "tríceps"
-          ],
           "sets": [
             {
               "weightKg": 20,
@@ -1067,30 +912,29 @@
             },
             {
               "weightKg": 15,
-              "reps": 15,
-              "note": "bajó carga por técnica"
+              "reps": 15
             }
-          ]
+          ],
+          "muscleGroup": "tríceps",
+          "notes": "Serie 2: bajó carga por técnica"
         },
         {
           "name": "Pallof press",
-          "muscleGroups": [
-            "core"
-          ],
           "sets": [
             {
               "weightKg": 17.5,
-              "reps": 10,
-              "loadMode": "per_side"
+              "reps": 10
             },
             {
               "weightKg": 17.5,
-              "reps": 10,
-              "loadMode": "per_side"
+              "reps": 10
             }
-          ]
+          ],
+          "muscleGroup": "core",
+          "notes": "Serie 1: peso por lado · Serie 2: peso por lado"
         }
-      ]
+      ],
+      "type": "strength"
     },
     {
       "id": "2026-10-25-recuperacion",
@@ -1103,38 +947,32 @@
       "exercises": [
         {
           "name": "Bicicleta estática suave",
-          "muscleGroups": [
-            "cardio"
-          ],
-          "sets": []
+          "sets": [],
+          "muscleGroup": "cardio"
         },
         {
           "name": "Pallof press",
-          "muscleGroups": [
-            "core"
-          ],
           "sets": [
             {
               "weightKg": 17.5,
-              "reps": 10,
-              "loadMode": "per_side"
+              "reps": 10
             },
             {
               "weightKg": 17.5,
-              "reps": 10,
-              "loadMode": "per_side"
+              "reps": 10
             }
-          ]
+          ],
+          "muscleGroup": "core",
+          "notes": "Serie 1: peso por lado · Serie 2: peso por lado"
         },
         {
           "name": "Estiramiento flexor de cadera",
-          "muscleGroups": [
-            "movilidad"
-          ],
           "sets": [],
-          "note": "interrumpido por molestia"
+          "muscleGroup": "movilidad",
+          "notes": "interrumpido por molestia"
         }
-      ]
+      ],
+      "type": "strength"
     },
     {
       "id": "2026-10-24-torso-a",
@@ -1146,11 +984,6 @@
       "exercises": [
         {
           "name": "Press banca con barra",
-          "muscleGroups": [
-            "pecho",
-            "tríceps",
-            "hombro"
-          ],
           "sets": [
             {
               "weightKg": 60,
@@ -1164,14 +997,11 @@
               "weightKg": 70,
               "reps": 8
             }
-          ]
+          ],
+          "muscleGroup": "pecho, tríceps, hombro"
         },
         {
           "name": "Remo sentado E-Gym",
-          "muscleGroups": [
-            "espalda",
-            "bíceps"
-          ],
           "sets": [
             {
               "weightKg": 30,
@@ -1187,36 +1017,29 @@
             },
             {
               "weightKg": 42.5,
-              "reps": null,
-              "note": "reps no especificadas"
+              "reps": null
             }
-          ]
+          ],
+          "muscleGroup": "espalda, bíceps",
+          "notes": "Serie 4: reps no especificadas"
         },
         {
           "name": "Press hombros sentado con mancuernas",
-          "muscleGroups": [
-            "hombro",
-            "tríceps"
-          ],
           "sets": [
             {
               "weightKg": 17.5,
-              "reps": 12,
-              "loadMode": "per_dumbbell"
+              "reps": 12
             },
             {
               "weightKg": null,
-              "reps": null,
-              "note": "dos series adicionales completadas; reps y carga no anotadas"
+              "reps": null
             }
-          ]
+          ],
+          "muscleGroup": "hombro, tríceps",
+          "notes": "Serie 1: peso por mancuerna · Serie 2: dos series adicionales completadas; reps y carga no anotadas"
         },
         {
           "name": "Jalón al pecho",
-          "muscleGroups": [
-            "espalda",
-            "bíceps"
-          ],
           "sets": [
             {
               "weightKg": 52.5,
@@ -1230,26 +1053,22 @@
               "weightKg": 60,
               "reps": 8
             }
-          ]
+          ],
+          "muscleGroup": "espalda, bíceps"
         },
         {
           "name": "Curl predicador EZ 21s",
-          "muscleGroups": [
-            "bíceps"
-          ],
           "sets": [
             {
               "weightKg": null,
-              "reps": null,
-              "note": "3 rondas; segunda y tercera con +2,5 kg por lado"
+              "reps": null
             }
-          ]
+          ],
+          "muscleGroup": "bíceps",
+          "notes": "Serie 1: 3 rondas; segunda y tercera con +2,5 kg por lado"
         },
         {
           "name": "Extensión de tríceps con cuerda",
-          "muscleGroups": [
-            "tríceps"
-          ],
           "sets": [
             {
               "weightKg": 17.5,
@@ -1259,36 +1078,33 @@
               "weightKg": 22,
               "reps": 15
             }
-          ]
+          ],
+          "muscleGroup": "tríceps"
         }
-      ]
+      ],
+      "type": "strength"
     },
     {
       "id": "2026-10-15-torso-interrupted",
       "date": "2026-10-15",
       "title": "Torso A interrumpido",
       "category": "strength",
-      "status": "interrupted",
+      "status": "partial",
       "notes": "Press banca y press hombro en máquina realizados, pero sin series, reps ni pesos anotados. Sesión interrumpida por una incidencia urgente de trabajo.",
       "exercises": [
         {
           "name": "Press banca",
-          "muscleGroups": [
-            "pecho",
-            "tríceps",
-            "hombro"
-          ],
-          "sets": []
+          "sets": [],
+          "muscleGroup": "pecho, tríceps, hombro"
         },
         {
           "name": "Press de hombro en máquina",
-          "muscleGroups": [
-            "hombro",
-            "tríceps"
-          ],
-          "sets": []
+          "sets": [],
+          "muscleGroup": "hombro, tríceps"
         }
-      ]
+      ],
+      "type": "strength",
+      "partial": true
     },
     {
       "id": "strava-20589230797",
@@ -2182,7 +1998,7 @@
       "title": "Run 5000 Excite Live: Inicio rápido",
       "partial": false,
       "incomplete": false,
-      "durationMin": 17.0,
+      "durationMin": 17,
       "distanceKm": 2.12,
       "notes": "ritmo medio 8:01/km · FC media/máx 120/151 · Strava #17704851140",
       "exercises": []
@@ -2221,7 +2037,7 @@
       "title": "Run 5000 Excite Live: Inicio rápido",
       "partial": false,
       "incomplete": false,
-      "durationMin": 30.0,
+      "durationMin": 30,
       "distanceKm": 4.081,
       "notes": "ritmo medio 7:21/km · FC media/máx 107/170 · Strava #17656496553",
       "exercises": []
@@ -2248,7 +2064,7 @@
       "partial": false,
       "incomplete": false,
       "durationMin": 23.25,
-      "distanceKm": 2.0,
+      "distanceKm": 2,
       "notes": "ritmo medio 11:37/km · FC media/máx 117/146 · Strava #17636735267",
       "exercises": []
     },
@@ -2286,7 +2102,7 @@
       "title": "Run 5000 Excite Live: Inicio rápido",
       "partial": false,
       "incomplete": false,
-      "durationMin": 45.0,
+      "durationMin": 45,
       "distanceKm": 5.411,
       "notes": "ritmo medio 8:19/km · Strava #17605863721",
       "exercises": []
@@ -3066,7 +2882,7 @@
       "title": "Evening Run",
       "partial": false,
       "incomplete": false,
-      "durationMin": 7.0,
+      "durationMin": 7,
       "distanceKm": 1.164,
       "notes": "ritmo medio 6:00/km · FC media/máx 134/160 · Strava #16417024610",
       "exercises": []
@@ -3548,7 +3364,7 @@
       "partial": false,
       "incomplete": false,
       "durationMin": 26.28,
-      "distanceKm": 2.0,
+      "distanceKm": 2,
       "notes": "ritmo medio 13:08/km · FC media/máx 118/152 · Strava #15676485162",
       "exercises": []
     },
@@ -4328,7 +4144,7 @@
       "partial": false,
       "incomplete": false,
       "durationMin": 0.02,
-      "distanceKm": 0.0,
+      "distanceKm": 0,
       "notes": "Strava #14375711432",
       "exercises": []
     },
@@ -4483,7 +4299,7 @@
       "title": "Lunch Hike",
       "partial": false,
       "incomplete": false,
-      "durationMin": 174.0,
+      "durationMin": 174,
       "distanceKm": 12.066,
       "notes": "desnivel +490 m · FC media/máx 101/163 · Strava #14097779348",
       "exercises": []
@@ -4626,7 +4442,7 @@
       "title": "Morning Run",
       "partial": false,
       "incomplete": false,
-      "durationMin": 99.0,
+      "durationMin": 99,
       "distanceKm": 14.053,
       "notes": "ritmo medio 7:02/km · desnivel +55 m · FC media/máx 152/164 · Strava #13879130261",
       "exercises": []
@@ -4639,7 +4455,7 @@
       "title": "Morning Run",
       "partial": false,
       "incomplete": false,
-      "durationMin": 100.0,
+      "durationMin": 100,
       "distanceKm": 14.162,
       "notes": "ritmo medio 7:03/km · desnivel +76 m · FC media/máx 150/162 · Strava #13860546781",
       "exercises": []
@@ -5263,7 +5079,7 @@
       "title": "Morning Run",
       "partial": false,
       "incomplete": false,
-      "durationMin": 63.0,
+      "durationMin": 63,
       "distanceKm": 8.029,
       "notes": "ritmo medio 7:50/km · desnivel +54 m · FC media/máx 142/184 · Strava #12986693651",
       "exercises": []
@@ -5446,7 +5262,7 @@
       "partial": false,
       "incomplete": false,
       "durationMin": 31.35,
-      "distanceKm": 7.0,
+      "distanceKm": 7,
       "notes": "velocidad media 13.4 km/h · desnivel +74 m · FC media/máx 141/165 · Strava #11476087558",
       "exercises": []
     },
@@ -7980,7 +7796,7 @@
       "title": "Night Run",
       "partial": false,
       "incomplete": false,
-      "durationMin": 40.0,
+      "durationMin": 40,
       "distanceKm": 6.097,
       "notes": "ritmo medio 6:33/km · desnivel +19 m · Strava #10195309722",
       "exercises": []
